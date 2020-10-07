@@ -6,6 +6,7 @@ import * as xml2js from 'xml2js';
 import * as fs from 'fs';
 import * as fsExtra from 'fs-extra';
 import * as _ from 'lodash';
+import * as cliProgress from 'cli-progress';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -80,9 +81,21 @@ export default class Migrate extends SfdxCommand {
 
   protected manifest;
   protected packageMapping;
+  protected multibar: any;
+  protected multibars: any = {};
 
   public async run(): Promise<AnyJson> {
     Raf.setLogLevel(this.flags.loglevel, this.flags.json);
+
+    this.multibar = new cliProgress.MultiBar({
+      clearOnComplete: false,
+      hideCursor: true,
+      fps: 500,
+      format: '{name} [{bar}] {percentage}% | {value}/{total} | {file} '
+    }, cliProgress.Presets.shades_grey);
+    this.multibars.total = this.multibar.create(0, 0, { name: 'Total'.padEnd(30, ' '), file: 'N/A' });
+    this.multibars.total.setTotal(4)
+
 
     this.manifest = await this.readManifest()
     this.packageMapping = _.keyBy(JSON.parse(fs.readFileSync(this.flags.packagemappingfile).toString()), 'directoryName')
@@ -96,34 +109,52 @@ export default class Migrate extends SfdxCommand {
     let files = []
     let self = this
 
-    files = (!fs.existsSync(this.flags.indeltacsv) && []) || _(fs
+    const rows = (!fs.existsSync(this.flags.indeltacsv) && []) || fs
     .readFileSync('diffs.csv')
     .toString('utf8')
-    .split('\n'))
+    .split('\n')
+
+    this.multibars.diffs = this.multibar.create(rows.length, 0, { name: 'Calculating diffs'.padEnd(30, ' '), file: 'N/A' });
+
+    files = _(rows)
     .filter(x => x.startsWith(`${self.flags.rootdir}/`))
     .map(x => x.replace(new RegExp(`^${self.flags.rootdir.replace('/', '\/')}\/`), ''))
     //.map(x => x.replace(/-meta.xml$/, ''))
-    .filter(x => { console.log(x)
-      return !ignoreDiffs.has(x)})
+    .filter(x => !ignoreDiffs.has(x))
     .flatMap(x => {
+      self.multibars.diffs.update(null, { file: x })
       const key = x.substring(0, x.indexOf('/'))
       const res = []
       if (self.packageMapping[key].metaFile === 'true') res.push(x + '-meta.xml')
       const subx = x.replace(key + '/', '')
       if (self.packageMapping[key].inFolder !== 'true' && subx.indexOf('/') !== -1) res.push(key + '/' + subx.substring(0, subx.indexOf('/')) + '/**')
       res.push(x)
+      self.multibars.diffs.increment()
+      self.multibar.update()
       return res
     })
     .uniq()
     .value()
 
-    console.log(files)
+    this.multibars.total.increment()
+    this.multibar.update()
 
-    this.buildFilteredPackageXml(files)
+    await this.buildFilteredPackageXml(files)
 
-    this.copyFilteredSource(files)
+    this.multibars.total.increment()
+    this.multibar.update()
 
-    this.writeManifest()
+    await this.copyFilteredSource(files)
+
+    this.multibars.total.increment()
+    this.multibar.update()
+
+    await this.writeManifest()
+
+    this.multibars.total.increment()
+    this.multibar.update()
+
+    this.multibar.stop();
 
     return ''
   }
@@ -147,16 +178,23 @@ export default class Migrate extends SfdxCommand {
 
   public async buildFilteredPackageXml(files) {
     const self = this
-    const metaMap = _(files)
+    const metaMapGroup = _(files)
       .filter(x => !x.endsWith('/**'))
       //.filter(x => !x.endsWith('-meta.xml'))
       .groupBy(f => self.packageMapping[f.substring(0, f.indexOf('/'))].xmlName)
-      .mapValues(x => x.map(y => {
+
+    this.multibars.filteredPackage = this.multibar.create(Object.keys(metaMapGroup.toJSON()).length, 0, { name: 'Building filtered manifest'.padEnd(30, ' '), file: 'N/A' });
+
+    const metaMap = metaMapGroup.mapValues(x => {
+      self.multibars.filteredPackage.update(null, { file: x })
+      self.multibars.filteredPackage.increment()
+      self.multibar.update()
+      return x.map(y => {
         const key = y.substring(0, y.indexOf('/'))
         y = y.replace(key + '/', '').replace('-meta.xml', '').replace(self.packageMapping[key].suffix && '.' + self.packageMapping[key].suffix || '', '')
         if (self.packageMapping[key].inFolder !== 'true' && y.indexOf('/') !== -1) y = y.substring(0, y.indexOf('/'))
         return y
-      }))
+      })})
       .value()
     this.manifest.Package.types = Object.entries(metaMap).map(x => ({
       members: [...new Set(x[1])],
@@ -165,20 +203,33 @@ export default class Migrate extends SfdxCommand {
   }
 
   public async copyFilteredSource(files) {
+    this.multibars.copyFilteredSourceBar = this.multibar.create(files.filter(x => !x.endsWith('/**')).length, 0, { name: 'Copying sources to target dir'.padEnd(30, ' '), file: 'N/A' });
+
     let self = this
     await fsExtra.emptyDir(this.flags.outsourcedir)
     await fsExtra.copy(this.flags.rootdir, this.flags.outsourcedir, { filter: filterFunc })
+
     function filterFunc(path) {
       if (fs.lstatSync(path).isDirectory()) {
         return true
       }
-      return files.includes(path.replace(`${self.flags.rootdir}/`, ''))
+      const basename = path.replace(`${self.flags.rootdir}/`, '')
+      const include = files.includes(basename)
+      if (include) {
+        self.multibars.copyFilteredSourceBar.update(null, { file: basename })
+        self.multibars.copyFilteredSourceBar.increment()
+        self.multibar.update()
+      }
+      return include
     }
   }
 
   public async writeManifest()  {
+    this.multibars.writeManifestBar = this.multibar.create(1, 0, { name: 'Writing filtered manifest'.padEnd(30, ' '), file: `${this.flags.outmanifestdir}/package.xml` });
     await fsExtra.emptyDir(this.flags.outmanifestdir)
     await this.writeXml(`${this.flags.outmanifestdir}/package.xml`, this.manifest)
+    this.multibars.writeManifestBar.increment()
+    this.multibar.update()
   }
 
   public async writeXml(xmlFile, obj) {
