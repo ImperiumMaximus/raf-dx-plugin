@@ -38,4 +38,29 @@ export class Raf {
       //do nothing for now, need to put pino to move to file
     }
   }
+
+  public static log(message: any, logLevel: LoggerLevel) {
+    if (this.logger === null || this.logger === undefined) return;
+    if (this.isJsonFormatEnabled) return;
+    switch (logLevel) {
+      case LoggerLevel.TRACE:
+        this.logger.trace(message);
+        break;
+      case LoggerLevel.DEBUG:
+        this.logger.debug(message);
+        break;
+      case LoggerLevel.INFO:
+        this.logger.info(message);
+        break;
+      case LoggerLevel.WARN:
+        this.logger.warn(message);
+        break;
+      case LoggerLevel.ERROR:
+        this.logger.error(message);
+        break;
+      case LoggerLevel.FATAL:
+        this.logger.fatal(message);
+        break;
+    }
+  }
 }
