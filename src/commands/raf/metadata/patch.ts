@@ -8,6 +8,7 @@ import * as xml2js from 'xml2js';
 import * as _ from 'lodash';
 import * as glob from 'glob';
 import * as jsonQuery from 'json-query';
+import * as dotenv from 'dotenv';
 
 const env = process.env.environment || 'default'
 // Initialize Messages with the current plugin directory
@@ -60,6 +61,12 @@ export default class Patch extends SfdxCommand {
       char: "f",
       description: "The path to the file where the results of the command are stored",
     }),
+    propfile: flags.string({
+      required: false,
+      char: "p",
+      description: "The path to the file where the results of the command are stored",
+
+    }),
     loglevel: flags.enum({
       description: "logging level for this command invocation",
       default: "info",
@@ -81,6 +88,7 @@ export default class Patch extends SfdxCommand {
     })
   }
   public async run(): Promise<AnyJson> {
+    await this.readProperties()
     this.baseDir = await this.maybeCopySourceDir()
     this.manifest = await this.readManifest()
     this.fixes = await this.readFixesFile()
@@ -94,6 +102,12 @@ export default class Patch extends SfdxCommand {
     await this.writeManifest()
 
     return ''
+  }
+
+  public async readProperties() {
+    if (this.flags.propfile) {
+      dotenv.config({ path: this.flags.propfile })
+    }
   }
 
   public async readManifest() {
@@ -145,18 +159,26 @@ export default class Patch extends SfdxCommand {
 
   public async preDeployFixes() {
     let self = this
-    _.each(_.keys(this.fixes), function (path) {
-      glob(`${self.baseDir}/${path}`, function (err, files) {
-        _.each(files, async function(f) {
-          let xml = await self.parseXml(f)
-          var confs = self.fixes[path]
-          if (!_.isArray(confs)) confs = [confs]
-          _.each(confs, function (conf) {
-            self.processConf(xml, conf)
-          })
-          await self.writeXml(f, xml)
+    _.each(_.keys(this.fixes), async function (path) {
+      if (glob.hasMagic(path)) {
+        glob(`${self.baseDir}/${path}`, function (err, files) {
+          _.each(files, patchFile)
         })
-      })
+      } else if (fs.existsSync(`${self.baseDir}/${path}`)) {
+        await patchFile(`${self.baseDir}/${path}`)
+      } else {
+        console.error(`Missing file ${self.baseDir}/${path}`)
+      }
+
+      async function patchFile(f) {
+        let xml = await self.parseXml(f)
+        var confs = self.fixes[path]
+        if (!_.isArray(confs)) confs = [confs]
+        _.each(confs, function (conf) {
+          self.processConf(xml, conf)
+        })
+        await self.writeXml(f, xml)
+      }
     })
   }
 
