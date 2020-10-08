@@ -1,0 +1,23 @@
+{
+  "pull": [
+    {
+      "fields": [
+        "Name",
+        "Type",
+        "ExternalId__c"
+      ],
+      "object": "Account",
+      "where": "'1' = '1'",
+      "storeIn": "data/accounts.csv"
+    }
+  ],
+  "push": [
+    {
+      "object": "Account",
+      "operation": "upsert",
+      "externalId": "ExternalId__c",
+      "source": "data/accounts.csv"
+    }
+  ]
+
+}

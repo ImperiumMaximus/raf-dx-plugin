@@ -1,5 +1,5 @@
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Connection, Messages, SfdxError } from '@salesforce/core';
+import { Connection, Messages, SfdxError, Org } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { LoggerLevel, Raf } from "../../../raf";
 
@@ -14,11 +14,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'data_pull');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Pull extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("data.pull.description");
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -33,10 +33,10 @@ export default class Pull extends SfdxCommand {
     datastore: flags.string({
       required: true,
       char: "d",
-      description: "File path of datastore.json with push/pull info",
+      description: messages.getMessage("data.pull.flags.datastore"),
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -59,9 +59,21 @@ export default class Pull extends SfdxCommand {
   public async run(): Promise<AnyJson> {
     Raf.setLogLevel(this.flags.loglevel, this.flags.json)
 
+    if (this.flags.targetusername) {
+      this.org =  await Org.create({ aliasOrUsername: this.flags.targetusername })
+    }
+
+    if (!this.org) {
+      throw new SfdxError(messages.getMessage("general.messages.error.noOrgFound", [this.flags.targetusername]))
+    }
+
+    if (this.flags.apiversion) {
+      this.org.getConnection().setApiVersion(this.flags.apiversion)
+    }
+
     const config = _.get(require(path.resolve(process.cwd(), this.flags.datastore)), 'pull', [])
 
-    if (!config.length) throw new Error("Supplied datastore.json is empty!")
+    if (!config.length) throw new SfdxError(messages.getMessage("data.pull.errors.datastoreEmpty"))
 
     const buildQuery = function (configItem) {
       let q = _.compact([
@@ -75,7 +87,7 @@ export default class Pull extends SfdxCommand {
     }
 
     const buildCsv = function (csvWriter, conn, res) {
-      Raf.log(`Writing ${res.records.length} lines`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("data.pull.infos.writingLines", [res.records.length]), LoggerLevel.INFO)
       for (const record of res.records) {
         _.each(record, (v, k) => {
           if (v === true) record[k] = 'true'
@@ -91,7 +103,7 @@ export default class Pull extends SfdxCommand {
     }
 
     const processData = function (conn: Connection, item = 0) {
-      Raf.log(`Processing ${config[item].object}...`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("data.pull.infos.processingObject", [config[item].object]), LoggerLevel.INFO)
       return conn
         .query(buildQuery(config[item]))
         .then(res => {
@@ -113,8 +125,8 @@ export default class Pull extends SfdxCommand {
     }
 
     processData(this.org.getConnection())
-    .then(() => Raf.log('Done', LoggerLevel.INFO))
-    .catch(e => Raf.log(`Error while pulling from Org: ${e}`, LoggerLevel.ERROR))
+    .then(() => Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO))
+    .catch(e => Raf.log(messages.getMessage("data.pull.errors.generalError", [e]), LoggerLevel.ERROR))
 
     return ''
   }

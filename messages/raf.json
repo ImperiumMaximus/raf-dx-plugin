@@ -1,0 +1,44 @@
+{
+  "general": {
+    "flags": {
+      "loglevel": "logging level for this command invocation"
+    },
+    "errors": {
+      "noOrgFound": "No org configuration found for name %s"
+    },
+    "infos": {
+      "done": "done"
+    }
+  },
+  "data": {
+    "pull": {
+      "description": "pulls data from an org",
+      "flags": {
+        "datastore": "File path of datastore.json with pull commands"
+      },
+      "errors": {
+        "datastoreEmpty": "Supplied datastore.json is empty!",
+        "generalError": "Error while pulling from Org: %s"
+      },
+      "infos": {
+        "processingObject": "Processing %s...",
+        "writingLines": "Writing %d lines"
+      }
+    },
+    "push": {
+      "description": "push data from an org",
+      "flags": {
+        "datastore": "File path of datastore.json with push commands"
+      },
+      "errors": {
+        "datastoreEmpty": "Supplied datastore.json is empty!",
+        "generalError": "Error while pushing from Org: %s",
+        "errorOnRow": "Error on row %s. Reason: %s"
+      },
+      "infos": {
+        "processingObject": "Processing %s...",
+        "processedRecords": "%s %d records"
+      }
+    }
+  }
+}

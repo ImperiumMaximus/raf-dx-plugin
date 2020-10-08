@@ -1,5 +1,5 @@
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Connection, Messages, SfdxError } from '@salesforce/core';
+import { Connection, Messages, SfdxError, Org } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { LoggerLevel, Raf } from "../../../raf";
 import { upsert } from "../../../shared/upsert";
@@ -16,11 +16,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'data_push');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Push extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("data.push.description");
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -35,10 +35,10 @@ export default class Push extends SfdxCommand {
     datastore: flags.string({
       required: true,
       char: "d",
-      description: "File path of datastore.json with push/pull info",
+      description: messages.getMessage("data.push.flags.datastore"),
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -61,9 +61,21 @@ export default class Push extends SfdxCommand {
   public async run(): Promise<AnyJson> {
     Raf.setLogLevel(this.flags.loglevel, this.flags.json)
 
+    if (this.flags.targetusername) {
+      this.org =  await Org.create({ aliasOrUsername: this.flags.targetusername })
+    }
+
+    if (!this.org) {
+      throw new SfdxError(messages.getMessage("general.messages.error.noOrgFound", this.flags.targetusername))
+    }
+
+    if (this.flags.apiversion) {
+      this.org.getConnection().setApiVersion(this.flags.apiversion)
+    }
+
     const config = _.get(require(path.resolve(process.cwd(), this.flags.datastore)), 'push', [])
 
-    if (!config.length) throw new Error("Supplied datastore.json is empty!")
+    if (!config.length) throw new SfdxError(messages.getMessage("data.pull.errors.datastoreEmpty"))
 
     class SfdcWriter extends Writable {
 
@@ -90,11 +102,11 @@ export default class Push extends SfdxCommand {
           (this.cfg.operation === 'delete' ? this.conn.sobject(this.cfg.object).delete(attrs.id) : upsert(this.conn, this.cfg.object, attrs.sObjects, attrs.externalIdFieldName))
             .then(res => {
               var resArray = Array.isArray(res) ? res : [res]
-              Raf.log(`${this.cfg.operation === 'delete' ? 'deleted' : 'upserted'} ${resArray.length} records`, LoggerLevel.INFO)
+              Raf.log(messages.getMessage("data.push.infos.processedRecords", [this.cfg.operation === 'delete' ? 'deleted' : 'upserted', resArray.length]), LoggerLevel.INFO)
               let hasErrors = false
               resArray.forEach((r, index) => {
                 if (!r.success) {
-                  Raf.log(`Error on row ${index}. Reason: ${r.errors}`, LoggerLevel.ERROR)
+                  Raf.log(messages.getMessage("data.push.errors.errorOnRow", [index, r.errors]), LoggerLevel.ERROR)
                   hasErrors = true
                 }
               })
@@ -148,7 +160,7 @@ export default class Push extends SfdxCommand {
 
     const processData = function (conn, item = 0) {
       const cfg = config[item]
-      Raf.log(`Processing ${config[item].object}...`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("data.push.infos.processingObject", [config[item].object]), LoggerLevel.INFO)
 
       return new Promise((resolve, reject) => {
         const input = (
@@ -172,8 +184,8 @@ export default class Push extends SfdxCommand {
     }
 
     processData(this.org.getConnection())
-    .then(() => Raf.log('Done', LoggerLevel.INFO))
-    .catch(e => Raf.log(`Error while pushing data to Org: ${e}`, LoggerLevel.ERROR))
+    .then(() => Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO))
+    .catch(e => Raf.log(messages.getMessage("data.push.errors.generalError", [e]), LoggerLevel.ERROR))
 
 
     return ''
