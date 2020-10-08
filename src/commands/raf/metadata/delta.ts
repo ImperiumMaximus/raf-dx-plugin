@@ -1,5 +1,5 @@
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Messages, SfdxError } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { LoggerLevel, Raf } from "../../../raf";
 import * as xml2js from 'xml2js';
