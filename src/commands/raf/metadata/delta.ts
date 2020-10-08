@@ -1,7 +1,7 @@
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { Raf } from "../../../raf";
+import { LoggerLevel, Raf } from "../../../raf";
 import * as xml2js from 'xml2js';
 import * as fs from 'fs';
 import * as fsExtra from 'fs-extra';
@@ -93,9 +93,12 @@ export default class Migrate extends SfdxCommand {
       fps: 500,
       format: '{name} [{bar}] {percentage}% | {value}/{total} | {file} '
     }, cliProgress.Presets.shades_grey);
-    this.multibars.total = this.multibar.create(0, 0, { name: 'Total'.padEnd(30, ' '), file: 'N/A' });
-    this.multibars.total.setTotal(4)
-
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.total = this.multibar.create(0, 0, { name: 'Total'.padEnd(30, ' '), file: 'N/A' });
+      this.multibars.total.setTotal(4)
+    } else {
+      Raf.log('Building delta...', LoggerLevel.INFO)
+    }
 
     this.manifest = await this.readManifest()
     this.packageMapping = _.keyBy(JSON.parse(fs.readFileSync(this.flags.packagemappingfile).toString()), 'directoryName')
@@ -114,7 +117,11 @@ export default class Migrate extends SfdxCommand {
     .toString('utf8')
     .split('\n')
 
-    this.multibars.diffs = this.multibar.create(rows.length, 0, { name: 'Calculating diffs'.padEnd(30, ' '), file: 'N/A' });
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.diffs = this.multibar.create(rows.length, 0, { name: 'Calculating diffs'.padEnd(30, ' '), file: 'N/A' });
+    } else {
+      Raf.log(`(1/4) Calculating diffs on ${rows.length} file(s)...`, LoggerLevel.INFO)
+    }
 
     files = _(rows)
     .filter(x => x.startsWith(`${self.flags.rootdir}/`))
@@ -122,39 +129,53 @@ export default class Migrate extends SfdxCommand {
     //.map(x => x.replace(/-meta.xml$/, ''))
     .filter(x => !ignoreDiffs.has(x))
     .flatMap(x => {
-      self.multibars.diffs.update(null, { file: x })
+      if (self.multibar.terminal.isTTY()) {
+        self.multibars.diffs.update(null, { file: x })
+      }
       const key = x.substring(0, x.indexOf('/'))
       const res = []
       if (self.packageMapping[key].metaFile === 'true') res.push(x + '-meta.xml')
       const subx = x.replace(key + '/', '')
       if (self.packageMapping[key].inFolder !== 'true' && subx.indexOf('/') !== -1) res.push(key + '/' + subx.substring(0, subx.indexOf('/')) + '/**')
       res.push(x)
-      self.multibars.diffs.increment()
-      self.multibar.update()
+      if (self.multibar.terminal.isTTY()) {
+        self.multibars.diffs.increment()
+        self.multibar.update()
+      }
       return res
     })
     .uniq()
     .value()
 
-    this.multibars.total.increment()
-    this.multibar.update()
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.total.increment()
+      this.multibar.update()
+    }
 
     await this.buildFilteredPackageXml(files)
 
-    this.multibars.total.increment()
-    this.multibar.update()
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.total.increment()
+      this.multibar.update()
+    }
 
     await this.copyFilteredSource(files)
 
-    this.multibars.total.increment()
-    this.multibar.update()
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.total.increment()
+      this.multibar.update()
+    }
 
     await this.writeManifest()
 
-    this.multibars.total.increment()
-    this.multibar.update()
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.total.increment()
+      this.multibar.update()
 
-    this.multibar.stop();
+      this.multibar.stop();
+    } else {
+      Raf.log('Done', LoggerLevel.INFO)
+    }
 
     return ''
   }
@@ -183,12 +204,18 @@ export default class Migrate extends SfdxCommand {
       //.filter(x => !x.endsWith('-meta.xml'))
       .groupBy(f => self.packageMapping[f.substring(0, f.indexOf('/'))].xmlName)
 
-    this.multibars.filteredPackage = this.multibar.create(Object.keys(metaMapGroup.toJSON()).length, 0, { name: 'Building filtered manifest'.padEnd(30, ' '), file: 'N/A' });
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.filteredPackage = this.multibar.create(Object.keys(metaMapGroup.toJSON()).length, 0, { name: 'Building filtered manifest'.padEnd(30, ' '), file: 'N/A' });
+    } else {
+      Raf.log(`(2/4) Building filtered manifest on ${Object.keys(metaMapGroup.toJSON()).length} metadata type(s)...`, LoggerLevel.INFO)
+    }
 
     const metaMap = metaMapGroup.mapValues(x => {
-      self.multibars.filteredPackage.update(null, { file: x })
-      self.multibars.filteredPackage.increment()
-      self.multibar.update()
+      if (self.multibar.terminal.isTTY()) {
+        self.multibars.filteredPackage.update(null, { file: x })
+        self.multibars.filteredPackage.increment()
+        self.multibar.update()
+      }
       return x.map(y => {
         const key = y.substring(0, y.indexOf('/'))
         y = y.replace(key + '/', '').replace('-meta.xml', '').replace(self.packageMapping[key].suffix && '.' + self.packageMapping[key].suffix || '', '')
@@ -203,8 +230,11 @@ export default class Migrate extends SfdxCommand {
   }
 
   public async copyFilteredSource(files) {
-    this.multibars.copyFilteredSourceBar = this.multibar.create(files.filter(x => !x.endsWith('/**')).length, 0, { name: 'Copying sources to target dir'.padEnd(30, ' '), file: 'N/A' });
-
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.copyFilteredSourceBar = this.multibar.create(files.filter(x => !x.endsWith('/**')).length, 0, { name: 'Copying sources to target dir'.padEnd(30, ' '), file: 'N/A' });
+    } else {
+      Raf.log(`(3/4) Copying ${files.filter(x => !x.endsWith('/**')).length} file(s) to target dir...`, LoggerLevel.INFO)
+    }
     let self = this
     await fsExtra.emptyDir(this.flags.outsourcedir)
     await fsExtra.copy(this.flags.rootdir, this.flags.outsourcedir, { filter: filterFunc })
@@ -216,20 +246,30 @@ export default class Migrate extends SfdxCommand {
       const basename = path.replace(`${self.flags.rootdir}/`, '')
       const include = files.includes(basename)
       if (include) {
-        self.multibars.copyFilteredSourceBar.update(null, { file: basename })
-        self.multibars.copyFilteredSourceBar.increment()
-        self.multibar.update()
+        if (self.multibar.terminal.isTTY()) {
+          self.multibars.copyFilteredSourceBar.update(null, { file: basename })
+          self.multibars.copyFilteredSourceBar.increment()
+          self.multibar.update()
+        }
       }
       return include
     }
   }
 
   public async writeManifest()  {
-    this.multibars.writeManifestBar = this.multibar.create(1, 0, { name: 'Writing filtered manifest'.padEnd(30, ' '), file: `${this.flags.outmanifestdir}/package.xml` });
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.writeManifestBar = this.multibar.create(1, 0, { name: 'Writing filtered manifest'.padEnd(30, ' '), file: `${this.flags.outmanifestdir}/package.xml` });
+    } else {
+      Raf.log(`(4/4) Writing filtered manifest`, LoggerLevel.INFO)
+    }
+
     await fsExtra.emptyDir(this.flags.outmanifestdir)
     await this.writeXml(`${this.flags.outmanifestdir}/package.xml`, this.manifest)
-    this.multibars.writeManifestBar.increment()
-    this.multibar.update()
+
+    if (this.multibar.terminal.isTTY()) {
+      this.multibars.writeManifestBar.increment()
+      this.multibar.update()
+    }
   }
 
   public async writeXml(xmlFile, obj) {
