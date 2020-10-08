@@ -40,5 +40,34 @@
         "processedRecords": "%s %d records"
       }
     }
+  },
+  "metadata": {
+    "delta": {
+      "description": "Computes delta of the source folder considering only changed files (list can be for instance computed with git by comparing two branches or commits)",
+      "flags": {
+        "indeltacsv": "CSV files containing the list of changed files, one row per each file",
+        "outsourcedir": "the output directory to store the delta-source files",
+        "outmanifestdir": "the output directory to store the delta-manigest file (package.xml)",
+        "rootdir": "the input directory that contains all the source files",
+        "inmanifestdir": "the input manifest (package.xml) file describing the contents of the source files",
+        "packagemappingfile": "the input json file of the describeMetadata() call (can be generated with sfdx force:mdapi:describemetadata)"
+      },
+      "infos": {
+        "buildingDelta": "Building delta...",
+        "calculatingDiffs": "(1/4) Calculating diffs on %d file(s)...",
+        "buildingFiltMan": "(2/4) Building filtered manifest on %d metadata type(s)...",
+        "copyingToTarget": "(3/4) Copying %d file(s) to target dir...",
+        "writingFiltMan": "(4/4) Writing filtered manifest"
+      },
+      "multibars": {
+        "total": "Total",
+        "na": "N/A",
+        "calculatingDiffs": "Calculating diffs...",
+        "buildingFiltMan": "Building filtered manifest",
+        "copyingToTarget": "Copying sources to target dir",
+        "writingFiltMan": "Writing filtered manifest"
+      }
+    }
+
   }
 }

@@ -13,9 +13,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'delta');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Migrate extends SfdxCommand {
+
+  public static description = messages.getMessage("metadata.delta.description");
 
   // Comment this out if your command does not require an org username
   // protected static requiresUsername = true;
@@ -30,36 +32,36 @@ export default class Migrate extends SfdxCommand {
     indeltacsv: flags.string({
       required: true,
       char: "f",
-      description: "File path of datastore.json with push/pull info",
+      description: messages.getMessage("metadata.delta.flags.indeltacsv"),
     }),
     outsourcedir: flags.string({
       required: true,
       char: "d",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.delta.flags.outsourcedir"),
     }),
     outmanifestdir: flags.string({
       required: true,
       char: "m",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.delta.flags.outmanifestdir"),
     }),
     rootdir: flags.string({
       required: true,
       char: "r",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.delta.flags.rootdir"),
     }),
     inmanifestdir: flags.string({
       required: true,
       char: "x",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.delta.flags.inmanifestdir"),
     }),
     packagemappingfile: flags.string({
       required: true,
       char: "p",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.delta.flags.packagemappingfile"),
 
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -94,14 +96,14 @@ export default class Migrate extends SfdxCommand {
       format: '{name} [{bar}] {percentage}% | {value}/{total} | {file} '
     }, cliProgress.Presets.shades_grey);
     if (this.multibar.terminal.isTTY()) {
-      this.multibars.total = this.multibar.create(0, 0, { name: 'Total'.padEnd(30, ' '), file: 'N/A' });
+      this.multibars.total = this.multibar.create(0, 0, { name: messages.getMessage("metadata.delta.multibars.total").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
       this.multibars.total.setTotal(4)
     } else {
-      Raf.log('Building delta...', LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.delta.infos.buildingDelta"), LoggerLevel.INFO)
     }
 
     this.manifest = await this.readManifest()
-    this.packageMapping = _.keyBy(JSON.parse(fs.readFileSync(this.flags.packagemappingfile).toString()), 'directoryName')
+    this.packageMapping = _.keyBy(JSON.parse(fs.readFileSync(this.flags.packagemappingfile).toString()).metadataObjects, 'directoryName')
 
     const ignoreDiffs = new Set([
       'package.xml',
@@ -118,9 +120,9 @@ export default class Migrate extends SfdxCommand {
     .split('\n')
 
     if (this.multibar.terminal.isTTY()) {
-      this.multibars.diffs = this.multibar.create(rows.length, 0, { name: 'Calculating diffs'.padEnd(30, ' '), file: 'N/A' });
+      this.multibars.diffs = this.multibar.create(rows.length, 0, { name: messages.getMessage("metadata.delta.multibars.calculatingDiffs").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
     } else {
-      Raf.log(`(1/4) Calculating diffs on ${rows.length} file(s)...`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.delta.infos.calculatingDiffs", [rows.length]), LoggerLevel.INFO)
     }
 
     files = _(rows)
@@ -174,7 +176,7 @@ export default class Migrate extends SfdxCommand {
 
       this.multibar.stop();
     } else {
-      Raf.log('Done', LoggerLevel.INFO)
+      Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO)
     }
 
     return ''
@@ -205,9 +207,9 @@ export default class Migrate extends SfdxCommand {
       .groupBy(f => self.packageMapping[f.substring(0, f.indexOf('/'))].xmlName)
 
     if (this.multibar.terminal.isTTY()) {
-      this.multibars.filteredPackage = this.multibar.create(Object.keys(metaMapGroup.toJSON()).length, 0, { name: 'Building filtered manifest'.padEnd(30, ' '), file: 'N/A' });
+      this.multibars.filteredPackage = this.multibar.create(Object.keys(metaMapGroup.toJSON()).length, 0, { name: messages.getMessage("metadata.delta.multibars.buildingFiltMan").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
     } else {
-      Raf.log(`(2/4) Building filtered manifest on ${Object.keys(metaMapGroup.toJSON()).length} metadata type(s)...`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.delta.infos.buildingFiltMan", [Object.keys(metaMapGroup.toJSON()).length]), LoggerLevel.INFO)
     }
 
     const metaMap = metaMapGroup.mapValues(x => {
@@ -231,9 +233,9 @@ export default class Migrate extends SfdxCommand {
 
   public async copyFilteredSource(files) {
     if (this.multibar.terminal.isTTY()) {
-      this.multibars.copyFilteredSourceBar = this.multibar.create(files.filter(x => !x.endsWith('/**')).length, 0, { name: 'Copying sources to target dir'.padEnd(30, ' '), file: 'N/A' });
+      this.multibars.copyFilteredSourceBar = this.multibar.create(files.filter(x => !x.endsWith('/**')).length, 0, { name: messages.getMessage("metadata.delta.multibars.copyingToTarget").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
     } else {
-      Raf.log(`(3/4) Copying ${files.filter(x => !x.endsWith('/**')).length} file(s) to target dir...`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.delta.infos.copyingToTarget", [files.filter(x => !x.endsWith('/**')).length]), LoggerLevel.INFO)
     }
     let self = this
     await fsExtra.emptyDir(this.flags.outsourcedir)
@@ -258,9 +260,9 @@ export default class Migrate extends SfdxCommand {
 
   public async writeManifest()  {
     if (this.multibar.terminal.isTTY()) {
-      this.multibars.writeManifestBar = this.multibar.create(1, 0, { name: 'Writing filtered manifest'.padEnd(30, ' '), file: `${this.flags.outmanifestdir}/package.xml` });
+      this.multibars.writeManifestBar = this.multibar.create(1, 0, { name: messages.getMessage("metadata.delta.multibars.writingFiltMan").padEnd(30, ' '), file: `${this.flags.outmanifestdir}/package.xml` });
     } else {
-      Raf.log(`(4/4) Writing filtered manifest`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.delta.infos.writingFiltMan"), LoggerLevel.INFO)
     }
 
     await fsExtra.emptyDir(this.flags.outmanifestdir)
