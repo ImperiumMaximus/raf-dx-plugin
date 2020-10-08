@@ -113,7 +113,7 @@ export default class Migrate extends SfdxCommand {
     let self = this
 
     const rows = (!fs.existsSync(this.flags.indeltacsv) && []) || fs
-    .readFileSync('diffs.csv')
+    .readFileSync(this.flags.indeltacsv)
     .toString('utf8')
     .split('\n')
 

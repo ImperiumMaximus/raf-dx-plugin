@@ -1,7 +1,7 @@
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Connection, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { Raf } from "../../../raf";
+import { LoggerLevel, Raf } from "../../../raf";
 
 import path = require('path');
 import _ = require('lodash');
@@ -75,7 +75,7 @@ export default class Pull extends SfdxCommand {
     }
 
     const buildCsv = function (csvWriter, conn, res) {
-      console.log(`WRITING ${res.records.length} lines`)
+      Raf.log(`Writing ${res.records.length} lines`, LoggerLevel.INFO)
       for (const record of res.records) {
         _.each(record, (v, k) => {
           if (v === true) record[k] = 'true'
@@ -91,7 +91,7 @@ export default class Pull extends SfdxCommand {
     }
 
     const processData = function (conn: Connection, item = 0) {
-      console.log(`PROCESSING ${config[item].object}`)
+      Raf.log(`Processing ${config[item].object}...`, LoggerLevel.INFO)
       return conn
         .query(buildQuery(config[item]))
         .then(res => {
@@ -113,8 +113,8 @@ export default class Pull extends SfdxCommand {
     }
 
     processData(this.org.getConnection())
-    .then(() => console.log('Script completed'))
-    .catch(e => console.error('SOMETHING WENT WRONG!', e))
+    .then(() => Raf.log('Done', LoggerLevel.INFO))
+    .catch(e => Raf.log(`Error while pulling from Org: ${e}`, LoggerLevel.ERROR))
 
     return ''
   }

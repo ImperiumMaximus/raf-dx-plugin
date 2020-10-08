@@ -3,6 +3,8 @@ import { Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { DescribeMetadataResult, ListMetadataQuery, FileProperties } from 'jsforce/api/metadata';
 import xl = require('excel4node');
+import { LoggerLevel, Raf } from "../../../raf";
+import { log } from 'console';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);
@@ -52,8 +54,7 @@ export default class Report extends SfdxCommand {
   }
 
   public async run(): Promise<AnyJson> {
-
-    //const describeMetadataCommand = 'sfdx force:mdapi:describemetadata --json'
+    Raf.setLogLevel(this.flags.loglevel, this.flags.json)
 
     const conn = this.org.getConnection()
 
@@ -61,19 +62,12 @@ export default class Report extends SfdxCommand {
     try {
       result = await conn.metadata.describe()
 
-      /*console.log(result.result)
-      console.log(!result || !!result.status || result.result || result.result.metadataObjects)
-      if (!result || !!result.status || result.result || result.result.metadataObjects) {
-        throw new Error('Describe Metadata Command Failed!')
-      }*/
-
       let metadataTypes: ListMetadataQuery[] = result.metadataObjects.map(o => o.xmlName).sort().map(o => { return { 'type' : o } })
-      console.log(metadataTypes)
 
       let wb = new xl.Workbook()
       await metadataTypes.reduce(async(curPromise, t) => {
         await curPromise
-        console.log(`Processing Metadata Type "${t.type}"`)
+        Raf.log(`Processing Metadata Type "${t.type}"...`, LoggerLevel.INFO)
         let lmResult = await conn.metadata.list(t)
 
         const fp: FileProperties = {
@@ -115,11 +109,7 @@ export default class Report extends SfdxCommand {
       }, Promise.resolve())
       wb.write(this.flags.outfile)
     } catch (error) {
-      console.log(error)
-      //result = error.stderr
-
-      // Remove line breaks from string
-      //result = result.replace(/(\r\n\t|\n|\r\t)/gm,'');
+      Raf.log(`Error while generating the report: ${error}`, LoggerLevel.ERROR)
 
       throw new core.SfdxError(error)
     }

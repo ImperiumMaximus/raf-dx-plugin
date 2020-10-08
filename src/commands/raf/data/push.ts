@@ -1,7 +1,7 @@
 import { flags, SfdxCommand } from '@salesforce/command';
 import { Connection, Messages, SfdxError } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
-import { Raf } from "../../../raf";
+import { LoggerLevel, Raf } from "../../../raf";
 import { upsert } from "../../../shared/upsert";
 
 import path = require('path');
@@ -87,16 +87,14 @@ export default class Push extends SfdxCommand {
 
         if (!objects.length) callback()
         else {
-          //console.log(attrs.sObjects);
-
           (this.cfg.operation === 'delete' ? this.conn.sobject(this.cfg.object).delete(attrs.id) : upsert(this.conn, this.cfg.object, attrs.sObjects, attrs.externalIdFieldName))
             .then(res => {
               var resArray = Array.isArray(res) ? res : [res]
-              console.log(`${this.cfg.operation === 'delete' ? 'deleted' : 'upserted'} ${resArray.length} records`)
+              Raf.log(`${this.cfg.operation === 'delete' ? 'deleted' : 'upserted'} ${resArray.length} records`, LoggerLevel.INFO)
               let hasErrors = false
               resArray.forEach((r, index) => {
                 if (!r.success) {
-                  console.log('Error on row ', index, r.errors)
+                  Raf.log(`Error on row ${index}. Reason: ${r.errors}`, LoggerLevel.ERROR)
                   hasErrors = true
                 }
               })
@@ -150,7 +148,7 @@ export default class Push extends SfdxCommand {
 
     const processData = function (conn, item = 0) {
       const cfg = config[item]
-      console.log(`PROCESSING ${config[item].object}`)
+      Raf.log(`Processing ${config[item].object}...`, LoggerLevel.INFO)
 
       return new Promise((resolve, reject) => {
         const input = (
@@ -174,8 +172,8 @@ export default class Push extends SfdxCommand {
     }
 
     processData(this.org.getConnection())
-    .then(() => console.log('Script completed'))
-    .catch(e => console.error('SOMETHING WENT WRONG!', e))
+    .then(() => Raf.log('Done', LoggerLevel.INFO))
+    .catch(e => Raf.log(`Error while pushing data to Org: ${e}`, LoggerLevel.ERROR))
 
 
     return ''

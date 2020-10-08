@@ -219,7 +219,7 @@ export default class Migrate extends SfdxCommand {
       { rollbackOnError: true, singlePackage: true },
       function (error, result: AsyncResult) {
         if (error) {
-          return console.error(error);
+          return Raf.log(error, LoggerLevel.ERROR);
         }
         deployId = result;
       }

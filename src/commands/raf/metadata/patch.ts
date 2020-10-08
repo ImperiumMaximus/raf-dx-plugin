@@ -9,6 +9,8 @@ import * as _ from 'lodash';
 import * as glob from 'glob';
 import * as jsonQuery from 'json-query';
 import * as dotenv from 'dotenv';
+import { LoggerLevel, Raf } from "../../../raf";
+
 
 const env = process.env.environment || 'default'
 // Initialize Messages with the current plugin directory
@@ -88,16 +90,24 @@ export default class Patch extends SfdxCommand {
     })
   }
   public async run(): Promise<AnyJson> {
+    Raf.setLogLevel(this.flags.loglevel, this.flags.json);
+
     await this.readProperties()
     this.baseDir = await this.maybeCopySourceDir()
     this.manifest = await this.readManifest()
     this.fixes = await this.readFixesFile()
 
+    Raf.log('Executing task delLwc...', LoggerLevel.INFO)
     await this.delLwc()
+    Raf.log('...done', LoggerLevel.INFO)
 
+    Raf.log('Executing task preDeployFixes...', LoggerLevel.INFO)
     await this.preDeployFixes()
+    Raf.log('...done', LoggerLevel.INFO)
 
+    Raf.log('Executing task fixEmailUnfiledPublicFolder...', LoggerLevel.INFO)
     await this.fixEmailUnfiledPublicFolder()
+    Raf.log('...done', LoggerLevel.INFO)
 
     await this.writeManifest()
 
@@ -131,10 +141,13 @@ export default class Patch extends SfdxCommand {
     const outsourcedir = this.flags.outsourcedir
 
     if (outsourcedir) {
+      Raf.log(`Copying to ${outsourcedir}`, LoggerLevel.INFO)
       await fsExtra.emptyDir(outsourcedir)
       await fsExtra.copy(this.flags.rootdir, outsourcedir, { filter: filterFunc })
+      Raf.log('...done', LoggerLevel.INFO)
       return outsourcedir
     } else {
+      Raf.log('Patching in place', LoggerLevel.INFO)
       return this.flags.rootdir
     }
 
@@ -167,7 +180,7 @@ export default class Patch extends SfdxCommand {
       } else if (fs.existsSync(`${self.baseDir}/${path}`)) {
         await patchFile(`${self.baseDir}/${path}`)
       } else {
-        console.error(`Missing file ${self.baseDir}/${path}`)
+        Raf.log(`Missing file ${self.baseDir}/${path}`, LoggerLevel.WARN)
       }
 
       async function patchFile(f) {
