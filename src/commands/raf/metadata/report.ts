@@ -4,7 +4,6 @@ import { AnyJson } from '@salesforce/ts-types';
 import { DescribeMetadataResult, ListMetadataQuery, FileProperties } from 'jsforce/api/metadata';
 import xl = require('excel4node');
 import { LoggerLevel, Raf } from "../../../raf";
-import { log } from 'console';
 
 // Initialize Messages with the current plugin directory
 Messages.importMessagesDirectory(__dirname);

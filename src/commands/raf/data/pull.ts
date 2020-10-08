@@ -7,6 +7,7 @@ import path = require('path');
 import _ = require('lodash');
 import csv = require('csv');
 import fs = require('fs');
+import { Options } from 'csv-stringify';
 
 
 // Initialize Messages with the current plugin directory
@@ -107,14 +108,15 @@ export default class Pull extends SfdxCommand {
       return conn
         .query(buildQuery(config[item]))
         .then(res => {
-          const csvWriter = csv.stringify({
+          let opts: Options = {
             delimiter: ',',
             quote: '"',
             quoted: true,
-            quotedEmpty: false,
+            quoted_empty: false,
             columns: config[item].fields,
             header: true
-          })
+          }
+          const csvWriter = csv.stringify(opts)
           csvWriter.pipe(fs.createWriteStream(path.resolve(process.cwd(), config[item].storeIn)))
           return buildCsv(csvWriter, conn, res)
         })
