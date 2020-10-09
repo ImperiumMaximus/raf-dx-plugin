@@ -17,8 +17,10 @@
         "datastore": "File path of datastore.json with pull commands"
       },
       "errors": {
-        "datastoreEmpty": "Supplied datastore.json is empty!",
         "generalError": "Error while pulling from Org: %s"
+      },
+      "warns": {
+        "datastoreEmpty": "Supplied datastore.json is empty!"
       },
       "infos": {
         "processingObject": "Processing %s...",
@@ -31,9 +33,11 @@
         "datastore": "File path of datastore.json with push commands"
       },
       "errors": {
-        "datastoreEmpty": "Supplied datastore.json is empty!",
         "generalError": "Error while pushing from Org: %s",
         "errorOnRow": "Error on row %s. Reason: %s"
+      },
+      "warns": {
+        "datastoreEmpty": "Supplied datastore.json is empty!"
       },
       "infos": {
         "processingObject": "Processing %s...",

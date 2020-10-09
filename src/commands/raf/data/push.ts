@@ -66,7 +66,7 @@ export default class Push extends SfdxCommand {
     }
 
     if (!this.org) {
-      throw new SfdxError(messages.getMessage("general.messages.error.noOrgFound", this.flags.targetusername))
+      throw new SfdxError(messages.getMessage("general.error.noOrgFound", this.flags.targetusername))
     }
 
     if (this.flags.apiversion) {
@@ -75,7 +75,10 @@ export default class Push extends SfdxCommand {
 
     const config = _.get(require(path.resolve(process.cwd(), this.flags.datastore)), 'push', [])
 
-    if (!config.length) throw new SfdxError(messages.getMessage("data.pull.errors.datastoreEmpty"))
+    if (!config.length) {
+      Raf.log(messages.getMessage("data.pull.warns.datastoreEmpty"), LoggerLevel.WARN)
+      return ''
+    }
 
     class SfdcWriter extends Writable {
 
