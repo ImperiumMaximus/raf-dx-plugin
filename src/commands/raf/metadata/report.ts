@@ -10,11 +10,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'report');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Report extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("metadata.report.description");
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -29,10 +29,10 @@ export default class Report extends SfdxCommand {
     outfile: flags.string({
       required: true,
       char: "f",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.report.flags.outfile"),
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -66,7 +66,7 @@ export default class Report extends SfdxCommand {
       let wb = new xl.Workbook()
       await metadataTypes.reduce(async(curPromise, t) => {
         await curPromise
-        Raf.log(`Processing Metadata Type "${t.type}"...`, LoggerLevel.INFO)
+        Raf.log(messages.getMessage("metadata.report.infos.processingMetadataType", [t.type]), LoggerLevel.INFO)
         let lmResult = await conn.metadata.list(t)
 
         const fp: FileProperties = {
@@ -108,7 +108,7 @@ export default class Report extends SfdxCommand {
       }, Promise.resolve())
       wb.write(this.flags.outfile)
     } catch (error) {
-      Raf.log(`Error while generating the report: ${error}`, LoggerLevel.ERROR)
+      Raf.log(messages.getMessage("metadata.report.infos.generalError", [error]), LoggerLevel.ERROR)
 
       throw new core.SfdxError(error)
     }

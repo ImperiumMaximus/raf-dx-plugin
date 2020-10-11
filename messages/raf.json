@@ -92,6 +92,18 @@
       "warns": {
         "missingFile": "Missing file %s/%s"
       }
+    },
+    "report": {
+      "description": "produces a report in Excel format of all the metadata found in an Org",
+      "flags": {
+        "outfile": "file path where the results are stored"
+      },
+      "infos": {
+        "processingMetadataType": "Processing Metadata Type \"%s\"..."
+      },
+      "errors": {
+        "generalError": "Error while generating the report: %s"
+      }
     }
   }
 }
