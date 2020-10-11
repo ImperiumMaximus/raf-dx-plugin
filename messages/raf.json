@@ -122,5 +122,17 @@
         "installError": "Problems installing the package %s"
       }
     }
+  },
+  "sharing": {
+    "get": {
+      "description": "Reads current OWD Sharing Settings for an Object in an Org",
+      "flags": {
+        "apiname": "API Name of the Salesforce Object",
+        "targetorg": "Org from which the sharing settings will be read. If not specified default Org will be used."
+      },
+      "errors": {
+        "noOrgFound": "No target Org specified and no default Org found"
+      }
+    }
   }
 }

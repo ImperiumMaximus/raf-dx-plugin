@@ -9,11 +9,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'migrate');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Migrate extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("sharing.get.description");
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -28,15 +28,15 @@ export default class Migrate extends SfdxCommand {
     apiname: flags.string({
       required: true,
       char: "n",
-      description: "API Name of the Salesforce Object"
+      description: messages.getMessage("sharing.get.flags.apiname")
     }),
     targetorg: flags.string({
       char: "u",
-      description: "Org against the sharing settings will be altered. If not specified default Org will be used.",
+      description: messages.getMessage("sharing.get.flags.targetorg"),
       required: false
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -64,7 +64,7 @@ export default class Migrate extends SfdxCommand {
     }
 
     if (!this.org) {
-      throw new Error("No target Org specified and no default Org found");
+      throw new Error(messages.getMessage("sharing.get.errors.noOrgFound"));
     }
 
     const conn = this.org.getConnection()
