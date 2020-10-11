@@ -3,8 +3,6 @@ import { LoggerLevel, Messages, SfdxError, Org } from '@salesforce/core';
 import { AsyncResult, DeployResult, Connection } from 'jsforce';
 import { AnyJson } from '@salesforce/ts-types';
 import { Raf } from "../../../raf";
-import { RecordResult, ErrorResult, SuccessResult } from "jsforce/record-result";
-import { MetadataInfo, SaveResult } from "jsforce/api/metadata";
 import { singleRecordQuery } from '../../../shared/queries';
 import * as fsExtra from 'fs-extra';
 import * as fs from 'fs';
@@ -85,7 +83,7 @@ export default class Migrate extends SfdxCommand {
     'Pricebook'
   ])
 
-  private static stdObjApiNamesToOptions = {
+  /*private static stdObjApiNamesToOptions = {
     "Account": new Set([
       "None",
       "Read",
@@ -136,13 +134,13 @@ export default class Migrate extends SfdxCommand {
       "Read",
       "ReadSelect",
     ])
-  }
+  }*/
 
-  private static customObjectOptions = new Set([
+  /*private static customObjectOptions = new Set([
     'Private',
     'Read',
     'ReadWrite'
-  ])
+  ])*/
 
   public async run(): Promise<AnyJson> {
     Raf.setLogLevel(this.flags.loglevel, this.flags.json);
