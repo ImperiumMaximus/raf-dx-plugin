@@ -1,5 +1,5 @@
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Messages, SfdxError, Org } from '@salesforce/core';
+import { Messages, Org } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { Raf } from "../../../raf";
 import { singleRecordQuery } from '../../../shared/queries';
