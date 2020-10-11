@@ -105,5 +105,22 @@
         "generalError": "Error while generating the report: %s"
       }
     }
+  },
+  "package": {
+    "migrate": {
+      "description": "migrate all installed packages from an Org to another Org",
+      "flags": {
+        "apexcompile": "compile all Apex in the org and package, or only Apex in the package; unlocked packages only",
+        "targetorg": "Org Alias to which packages will be installed",
+        "sourceorg": "Org Alias to which packages will be queried",
+        "excludelist": "List of Package names to exclude"
+      },
+      "infos": {
+        "workToBeDone": "Obtained %d packages from %s. Proceeding install..."
+      },
+      "errors": {
+        "installError": "Problems installing the package %s"
+      }
+    }
   }
 }

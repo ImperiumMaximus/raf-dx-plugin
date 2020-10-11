@@ -2,7 +2,7 @@ import { flags, SfdxCommand } from '@salesforce/command';
 import { Messages, Org } from '@salesforce/core';
 import { PackageInstallCommand } from 'salesforce-alm/dist/commands/force/package/install';
 import { AnyJson } from '@salesforce/ts-types';
-import { Raf } from "../../../raf";
+import { LoggerLevel, Raf } from "../../../raf";
 import { PackageInstallRequest } from "../../../shared/typeDefs";
 
 const cliProgress = require('cli-progress');
@@ -14,11 +14,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'migrate');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Migrate extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("package.migrate.description");
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -28,26 +28,26 @@ export default class Migrate extends SfdxCommand {
       char: 'a',
       default: 'all',
       required: false,
-      description: 'apexcompile',
+      description: messages.getMessage("package.migrate.flags.apexcompile"),
       options: ['all', 'package']
     }),
     targetorg: flags.string({
       required: true,
       char: "d",
-      description: "Org Alias to which packages will be installed",
+      description: messages.getMessage("package.migrate.flags.targetorg"),
     }),
     sourceorg: flags.string({
       required: false,
       char: "s",
-      description: "Org Alias to which packages will be queried",
+      description: messages.getMessage("package.migrate.flags.sourceorg"),
     }),
     excludelist: flags.string({
       required: false,
       char: "e",
-      description: "List of Package names to exclude"
+      description:  messages.getMessage("package.migrate.flags.excludelist")
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description:  messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -84,7 +84,7 @@ export default class Migrate extends SfdxCommand {
     const installedPackages = await sourceconn.tooling.query('SELECT Id, SubscriberPackage.Name, SubscriberPackageVersion.Id FROM InstalledSubscriberPackage ORDER BY SubscriberPackageId')
 
     if (installedPackages.totalSize) {
-      this.ux.log(`Obtained ${installedPackages.totalSize} packages from ${this.flags.sourceorg}. Proceeding install...`);
+      Raf.log(messages.getMessage("package.migrate.infos.workToBeDone", [installedPackages.totalSize, this.flags.sourceorg]), LoggerLevel.INFO);
       const packageIds = installedPackages.records.map(p => {
         return p['SubscriberPackageVersion']['Id']
       })
@@ -154,7 +154,7 @@ export default class Migrate extends SfdxCommand {
         unhookIntercept();
 
         if (installationResultJson === undefined || installationResultJson.Status !== 'SUCCESS') {
-          throw Error('Problems installing the package ' + packageIds[i]);
+          throw Error(messages.getMessage("package.migrate.infos.installError", [packageIds[i]]));
         }
 
         bar.increment(1, { packageid: (i + 1) === packageIds.length ? 'Completed' : packageIds[i + 1] })
