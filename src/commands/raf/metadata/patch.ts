@@ -18,11 +18,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'patch');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Patch extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("metadata.patch.description");
 
   // Comment this out if your command does not require an org username
   //protected static requiresUsername = true;
@@ -41,36 +41,36 @@ export default class Patch extends SfdxCommand {
     outsourcedir: flags.string({
       required: false,
       char: "d",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.patch.flags.outsourcedir")
     }),
     outmanifestdir: flags.string({
       required: false,
       char: "m",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.patch.flags.outmanifestdir")
     }),
     rootdir: flags.string({
       required: true,
       char: "r",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.patch.flags.rootdir")
     }),
     inmanifestdir: flags.string({
       required: true,
       char: "x",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.patch.flags.inmanifestdir")
     }),
     fixes: flags.string({
       required: true,
       char: "f",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.patch.flags.fixes")
     }),
     propfile: flags.string({
       required: false,
       char: "p",
-      description: "The path to the file where the results of the command are stored",
+      description: messages.getMessage("metadata.patch.flags.propfile")
 
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -97,17 +97,17 @@ export default class Patch extends SfdxCommand {
     this.manifest = await this.readManifest()
     this.fixes = await this.readFixesFile()
 
-    Raf.log('Executing task delLwc...', LoggerLevel.INFO)
+    Raf.log(messages.getMessage("metadata.patch.infos.executingDelLwc"), LoggerLevel.INFO)
     await this.delLwc()
-    Raf.log('...done', LoggerLevel.INFO)
+    Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO)
 
-    Raf.log('Executing task preDeployFixes...', LoggerLevel.INFO)
+    Raf.log(messages.getMessage("metadata.patch.infos.executingPreDeployFixes"), LoggerLevel.INFO)
     await this.preDeployFixes()
-    Raf.log('...done', LoggerLevel.INFO)
+    Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO)
 
-    Raf.log('Executing task fixEmailUnfiledPublicFolder...', LoggerLevel.INFO)
+    Raf.log(messages.getMessage("metadata.patch.infos.executingFixUnfiledPublic"), LoggerLevel.INFO)
     await this.fixEmailUnfiledPublicFolder()
-    Raf.log('...done', LoggerLevel.INFO)
+    Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO)
 
     await this.writeManifest()
 
@@ -141,13 +141,13 @@ export default class Patch extends SfdxCommand {
     const outsourcedir = this.flags.outsourcedir
 
     if (outsourcedir) {
-      Raf.log(`Copying to ${outsourcedir}`, LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.patch.infos.copyingToFolder", [outsourcedir]), LoggerLevel.INFO)
       await fsExtra.emptyDir(outsourcedir)
       await fsExtra.copy(this.flags.rootdir, outsourcedir, { filter: filterFunc })
-      Raf.log('...done', LoggerLevel.INFO)
+      Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO)
       return outsourcedir
     } else {
-      Raf.log('Patching in place', LoggerLevel.INFO)
+      Raf.log(messages.getMessage("metadata.patch.infos.inPlacePatch"), LoggerLevel.INFO)
       return this.flags.rootdir
     }
 
@@ -180,7 +180,7 @@ export default class Patch extends SfdxCommand {
       } else if (fs.existsSync(`${self.baseDir}/${path}`)) {
         await patchFile(`${self.baseDir}/${path}`)
       } else {
-        Raf.log(`Missing file ${self.baseDir}/${path}`, LoggerLevel.WARN)
+        Raf.log(messages.getMessage("metadata.patch.warns.missingFile", [self.baseDir, path]), LoggerLevel.WARN)
       }
 
       async function patchFile(f) {

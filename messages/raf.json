@@ -49,9 +49,9 @@
     "delta": {
       "description": "Computes delta of the source folder considering only changed files (list can be for instance computed with git by comparing two branches or commits)",
       "flags": {
-        "indeltacsv": "CSV files containing the list of changed files, one row per each file",
+        "indeltacsv": "CSV file containing the list of changed files, one row per each file",
         "outsourcedir": "the output directory to store the delta-source files",
-        "outmanifestdir": "the output directory to store the delta-manigest file (package.xml)",
+        "outmanifestdir": "the output directory to store the delta-manifest file (package.xml)",
         "rootdir": "the input directory that contains all the source files",
         "inmanifestdir": "the input manifest (package.xml) file describing the contents of the source files",
         "packagemappingfile": "the input json file of the describeMetadata() call (can be generated with sfdx force:mdapi:describemetadata)"
@@ -71,7 +71,27 @@
         "copyingToTarget": "Copying sources to target dir",
         "writingFiltMan": "Writing filtered manifest"
       }
+    },
+    "patch": {
+      "description": "patches source metadata files in order to solve common Salesforce deployment bugs or for modifly on the fly API endpoints",
+      "flags": {
+        "outsourcedir": "the output directory to store the patched source files",
+        "outmanifestdir": "the output directory to store the patched manifest file (package.xml)",
+        "rootdir": "the input directory that contains the source files to be patched",
+        "inmanifestdir": "the input manifest (package.xml) file describing the contents of the source files",
+        "fixes": "file path of a JSON that describes the set of fixes and/or patches  to be made",
+        "propfile": "file path o a key-value declaration to be loaded as part of the environment variables to be seen by the command"
+      },
+      "infos": {
+        "executingDelLwc": "Executing task delLwc...",
+        "executingPreDeployFixes": "Executing task preDeployFixes...",
+        "executingFixUnfiledPublic": "Executing task fixEmailUnfiledPublicFolder...",
+        "copyingToFolder": "Copying to %s",
+        "inPlacePatch": "Patching in place"
+      },
+      "warns": {
+        "missingFile": "Missing file %s/%s"
+      }
     }
-
   }
 }
