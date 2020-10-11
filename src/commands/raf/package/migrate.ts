@@ -1,9 +1,9 @@
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Messages, SfdxError, Org } from '@salesforce/core';
+import { Messages, Org } from '@salesforce/core';
 import { PackageInstallCommand } from 'salesforce-alm/dist/commands/force/package/install';
 import { AnyJson } from '@salesforce/ts-types';
 import { Raf } from "../../../raf";
-import { PackageInstallRequest, SObjectBasedAPICallResult } from "../../../shared/typeDefs";
+import { PackageInstallRequest } from "../../../shared/typeDefs";
 
 const cliProgress = require('cli-progress');
 
@@ -24,7 +24,13 @@ export default class Migrate extends SfdxCommand {
   protected static requiresUsername = true;
 
   protected static flagsConfig = {
-    apexcompile: flags.enum({ char: 'a', default: 'all', required: false, description: 'apexcompile', options: ['all', 'package'] }),
+    apexcompile: flags.enum({
+      char: 'a',
+      default: 'all',
+      required: false,
+      description: 'apexcompile',
+      options: ['all', 'package']
+    }),
     targetorg: flags.string({
       required: true,
       char: "d",
