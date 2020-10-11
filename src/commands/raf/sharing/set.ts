@@ -15,11 +15,11 @@ Messages.importMessagesDirectory(__dirname);
 
 // Load the specific messages for this file. Messages from @salesforce/command, @salesforce/core,
 // or any library that is using the messages framework can also be loaded this way.
-const messages = Messages.loadMessages('raf-dx-plugin', 'sharing_set');
+const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
 export default class Migrate extends SfdxCommand {
 
-  public static description = messages.getMessage("commandDescription");
+  public static description = messages.getMessage("sharing.set.description");
 
   // Comment this out if your command does not require an org username
   protected static requiresUsername = true;
@@ -34,25 +34,25 @@ export default class Migrate extends SfdxCommand {
     apiname: flags.string({
       required: true,
       char: "n",
-      description: "API Name of the Salesforce Object"
+      description: messages.getMessage("sharing.set.flags.apiname")
     }),
     targetorg: flags.string({
       char: "u",
-      description: "Org against the sharing settings will be altered. If not specified default Org will be used.",
+      description: messages.getMessage("sharing.set.flags.targetorg"),
       required: false
     }),
     internalaccesslevel: flags.string({
       char: "i",
-      description: "Default internal access level for the specified Salesforce Object",
+      description: messages.getMessage("sharing.set.flags.internalaccesslevel"),
       required: true
     }),
     externalaccesslevel: flags.string({
       char: "e",
-      description: "Default external access level for the specified Salesforce Object",
+      description: messages.getMessage("sharing.set.flags.externalaccesslevel"),
       required: true
     }),
     loglevel: flags.enum({
-      description: "logging level for this command invocation",
+      description: messages.getMessage("general.flags.loglevel"),
       default: "info",
       required: false,
       options: [
@@ -150,7 +150,7 @@ export default class Migrate extends SfdxCommand {
     }
 
     if (!this.org) {
-      throw new Error("No target Org specified and no default Org found");
+      throw new Error(messages.getMessage("sharing.set.errors.noOrgFound"));
     }
 
     const conn = this.org.getConnection()
@@ -230,7 +230,7 @@ export default class Migrate extends SfdxCommand {
 
     if (!metadata_deploy_result.success)
       throw new SfdxError(
-        `Unable to deploy the Custom Object: ${metadata_deploy_result.details["componentFailures"]["problem"]}`
+        messages.getMessage("sharing.set.errors.deploymentError", [metadata_deploy_result.details["componentFailures"]["problem"]])
       );
 
     rimraf.sync("temp_rafdxplugin");
@@ -273,7 +273,7 @@ export default class Migrate extends SfdxCommand {
       });
 
       if (!metadata_result.done) {
-        Raf.log("Polling for Deployment Status", LoggerLevel.INFO);
+        Raf.log(messages.getMessage("sharing.set.infos.pollingDeploymentStatus"), LoggerLevel.INFO);
         await self.delay(5000);
       } else {
         break;
