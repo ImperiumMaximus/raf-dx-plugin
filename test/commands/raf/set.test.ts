@@ -1,8 +1,8 @@
-import { expect, test } from '@salesforce/command/lib/test';
-import { ensureJsonMap, ensureString } from '@salesforce/ts-types';
+var expect = require('chai').expect;
+/*import { ensureJsonMap, ensureString } from '@salesforce/ts-types';*/
 
-describe('raf:sharing:set', () => {
-  test
+describe('raf:boh:set', () => {
+  /*test
     .withOrg({ username: 'rfioratto@raf-dx-plugin.com' }, true)
     .withConnectionRequest(request => {
       const requestMap = ensureJsonMap(request);
@@ -12,8 +12,9 @@ describe('raf:sharing:set', () => {
       return Promise.resolve({ records: [] });
     })
     .stdout()
-    .command(['hello:org', '--targetusername', 'test@org.com'])
-    .it('runs hello:org --targetusername test@org.com', ctx => {
-      expect(ctx.stdout).to.contain('Hello world! This is org: Super Awesome Org and I will be around until Tue Mar 20 2018!');
+    .command(['hello:org', '--targetusername', 'test@org.com'])*/
+    it('runs hello:org --targetusername test@org.com', ctx => {
+      expect.fail('fail')
+      //expect(ctx.stdout).to.contain('Hello world! This is org: Super Awesome Org and I will be around until Tue Mar 20 2018!');
     });
 });
