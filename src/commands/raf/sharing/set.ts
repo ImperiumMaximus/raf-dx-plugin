@@ -156,7 +156,7 @@ export default class Migrate extends SfdxCommand {
     const conn = this.org.getConnection()
     const apiversion = await conn.retrieveMaxApiVersion();
 
-    var customObject_metadata: string;
+    let customObject_metadata: string;
 
     if (!Migrate.standardObjectApiNames.has(this.flags.apiname)) {
       const entityDefinitionRecord = await singleRecordQuery({ conn, query: `SELECT Id, Metadata FROM EntityDefinition WHERE DeveloperName = '${this.flags.apiname.substring(0, this.flags.apiname.lastIndexOf('__c'))}'`, tooling: true })
@@ -180,7 +180,7 @@ export default class Migrate extends SfdxCommand {
       </CustomObject>`
     }
 
-    var package_xml: string = `<?xml version="1.0" encoding="UTF-8"?>
+    const package_xml = `<?xml version="1.0" encoding="UTF-8"?>
      <Package xmlns="http://soap.sforce.com/2006/04/metadata">
          <types>
              <members>*</members>
@@ -195,23 +195,23 @@ export default class Migrate extends SfdxCommand {
     fs.writeFileSync(targetmetadatapath, customObject_metadata)
 
     if (this.flags.apiname === 'Account' && this.flags.internalaccesslevel === 'Private') {
-      let targetmetadatapath = 'temp_rafdxplugin/mdapi/objects/Opportunity.object'
+      targetmetadatapath = 'temp_rafdxplugin/mdapi/objects/Opportunity.object'
       fs.writeFileSync(targetmetadatapath, customObject_metadata)
       targetmetadatapath = 'temp_rafdxplugin/mdapi/objects/Case.object'
       fs.writeFileSync(targetmetadatapath, customObject_metadata)
     }
 
-    let targetpackagepath = "temp_rafdxplugin/mdapi/package.xml"
+    const targetpackagepath = "temp_rafdxplugin/mdapi/package.xml"
     fs.writeFileSync(targetpackagepath, package_xml)
 
-    var zipFile = 'temp_rafdxplugin/package.zip'
+    const zipFile = 'temp_rafdxplugin/package.zip'
     await this.zipDirectory('temp_rafdxplugin/mdapi', zipFile)
 
     //Deploy Rule
     conn.metadata.pollTimeout = 300;
     let deployId: AsyncResult;
 
-    var zipStream = fs.createReadStream(zipFile);
+    const zipStream = fs.createReadStream(zipFile);
     await conn.metadata.deploy(
       zipStream,
       { rollbackOnError: true, singlePackage: true },
@@ -223,7 +223,7 @@ export default class Migrate extends SfdxCommand {
       }
     );
 
-    let metadata_deploy_result: DeployResult = await this.checkDeploymentStatus(
+    const metadata_deploy_result: DeployResult = await this.checkDeploymentStatus(
       conn,
       deployId.id
     );
@@ -260,7 +260,7 @@ export default class Migrate extends SfdxCommand {
     retrievedId: string
   ): Promise<DeployResult> {
     let metadata_result;
-    let self = this
+    const self = this
     while (true) {
       await conn.metadata.checkDeployStatus(retrievedId, true, function (
         error,

@@ -4,8 +4,9 @@ import { PackageInstallCommand } from 'salesforce-alm/dist/commands/force/packag
 import { AnyJson } from '@salesforce/ts-types';
 import { LoggerLevel, Raf } from "../../../raf";
 import { PackageInstallRequest } from "../../../shared/typeDefs";
+import * as cliProgress from 'cli-progress';
+import * as intercept from 'intercept-stdout';
 
-const cliProgress = require('cli-progress');
 
 const defaultWait = 10;
 
@@ -140,11 +141,10 @@ export default class Migrate extends SfdxCommand {
           args.push('--json');
         }
 
-        const intercept = require('intercept-stdout');
 
         // setup the intercept function to silence the output of PackageInstallCommand call
         // tslint:disable-next-line: only-arrow-functions
-        const unhookIntercept = intercept(function(text) {
+        const unhookIntercept = intercept(function() {
           return '';
         });
 
