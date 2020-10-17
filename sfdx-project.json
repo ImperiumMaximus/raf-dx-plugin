@@ -1,7 +1,7 @@
 {
   "packageDirectories": [
     {
-      "path": "test/data/force-app",
+      "path": "test/data/raf-dx-plugin-devorg/force-app",
       "default": true
     }
   ],

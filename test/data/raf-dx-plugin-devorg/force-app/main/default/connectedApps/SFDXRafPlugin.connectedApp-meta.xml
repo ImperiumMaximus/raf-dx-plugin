@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ConnectedApp xmlns="http://soap.sforce.com/2006/04/metadata">
+    <contactEmail>raffaele.fioratto@gmail.com</contactEmail>
+    <label>SFDX Raf Plugin</label>
+    <oauthConfig>
+        <callbackUrl>http://localhost:1717/OauthRedirect</callbackUrl>
+        <certificate>MIIDJzCCAg8CFCSZ1wsw0Ukz9/5M+MJAb6GUJB0dMA0GCSqGSIb3DQEBCwUAMFAxCzAJBgNVBAYTAklUMQ4wDAYDVQQIDAVNaWxhbjEOMAwGA1UEBwwFTWlsYW4xITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMDEwMTMyMDM0MTJaFw0zMDEwMTEyMDM0MTJaMFAxCzAJBgNVBAYTAklUMQ4wDAYDVQQIDAVNaWxhbjEOMAwGA1UEBwwFTWlsYW4xITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMGek+IfM1mcgnkQWkLk3sCNzKb2GMHVoXKcruiPX1DYyC32Y9sORoqH/7qI7/mmUzGIuXYdcj0VUnt7OwO7hEWzY+rVWAmm97Uiyc+uqSFXvpIBqkCW409d0TegjzvkgOEyOHacCZVfP1o/zvSIWfLlB3p/ob/kmooErGIcxnjGBipSo6gaz74L85B8wkOY6YnpRrNKye9JdnVaRiLSf2p31WVW5Mn6CGVYL2wMhT/xdtzM1tjWc+kptwmUUwsCB8wp91/qVtoaJhe+ZDAgEvuV1Yax1a60X+VvEKu0xVrn9RYU8ym9B+q43d8p5F7++J16xz7MVZPMpn+MtNxeK+0CAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAJQpl9HRI1oYfeK9pfbOUUPwq96Sxg0fP9DGDbDKL9z5mz+RcJ5MKgG1ioq2lIYyw3fmkapj11sI6YD1iofO014wrtD5ka1DaRd8/y8okznptXLka8kQJh9OjtOIFW+UaZogMHf8huzxjV/6j0ZCxG0H3rq2jl0xthx/NO89e7vxoLtwdQtSMGnPMFcqaiatL0sYh962VaaGQ8NfhJ7HTUY+uxB3pFSzrrgsqhZQKgV+LQpLPBje6zbnDEN8NzrtqBeOT/Xt/e734elj6YSikhk4IpUsS87MvoMGYtnvAc+IzeKPQV1PPBJjhNInYKO2/x/3v+/PS9YMVb/CgGWdyNA==</certificate>
+        <consumerKey>3MVG9SOw8KERNN0_vEctugvlb3JU5M_EdCASLJ0kXP85c5IsbSvKwba9uAcIEkew8lCZ_3AXDVfqgVEcofk2C</consumerKey>
+        <isAdminApproved>true</isAdminApproved>
+        <isConsumerSecretOptional>false</isConsumerSecretOptional>
+        <isIntrospectAllTokens>false</isIntrospectAllTokens>
+        <scopes>Api</scopes>
+        <scopes>Web</scopes>
+        <scopes>RefreshToken</scopes>
+    </oauthConfig>
+    <oauthPolicy>
+        <ipRelaxation>ENFORCE</ipRelaxation>
+        <refreshTokenPolicy>infinite</refreshTokenPolicy>
+    </oauthPolicy>
+    <permissionSetName>SFDX Raf Plugin</permissionSetName>
+</ConnectedApp>

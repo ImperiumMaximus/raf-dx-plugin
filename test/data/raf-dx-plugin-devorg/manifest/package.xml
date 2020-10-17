@@ -3,6 +3,7 @@
     <types>
         <members>Account</members>
         <members>TestSharing__c</members>
+        <members>TestInProgress__mdt</members>
         <name>CustomObject</name>
     </types>
     <types>
@@ -12,6 +13,22 @@
     <types>
         <members>TestSharing__c</members>
         <name>CustomTab</name>
+    </types>
+    <types>
+        <members>TestInProgress__mdt-Test In Progress Layout</members>
+        <name>Layout</name>
+    </types>
+    <types>
+        <members>TestInProgress.Status</members>
+        <name>CustomMetadata</name>
+    </types>
+    <types>
+      <members>SFDXRafPlugin</members>
+      <name>ConnectedApp</name>
+    </types>
+    <types>
+      <members>SFDXRafPlugin</members>
+      <name>PermissionSet</name>
     </types>
     <version>49.0</version>
 </Package>
