@@ -61,9 +61,9 @@ export default class Report extends SfdxCommand {
     try {
       result = await conn.metadata.describe()
 
-      let metadataTypes: ListMetadataQuery[] = result.metadataObjects.map(o => o.xmlName).sort().map(o => { return { 'type' : o } })
+      const metadataTypes: ListMetadataQuery[] = result.metadataObjects.map(o => o.xmlName).sort().map(o => { return { 'type' : o } })
 
-      let wb = new xl.Workbook()
+      const wb = new xl.Workbook()
       await metadataTypes.reduce(async(curPromise, t) => {
         await curPromise
         Raf.log(messages.getMessage("metadata.report.infos.processingMetadataType", [t.type]), LoggerLevel.INFO)
@@ -88,7 +88,7 @@ export default class Report extends SfdxCommand {
           lmResult = Array.isArray(lmResult) ? lmResult : [lmResult]
 
           if (lmResult.length > 0) {
-            let ws = wb.addWorksheet(t.type)
+            const ws = wb.addWorksheet(t.type)
             // set header
             Object.keys(fp).forEach((c, idx) => {
               ws.cell(1, idx + 1).string(c)
@@ -98,7 +98,7 @@ export default class Report extends SfdxCommand {
 
             lmResult.forEach((r, rIdx) => {
               Object.keys(fp).forEach((c, cIdx) => {
-                ws.cell(rIdx + 2, cIdx + 1).string(r.hasOwnProperty(c) ? r[c] : "")
+                ws.cell(rIdx + 2, cIdx + 1).string(Object.prototype.hasOwnProperty.call(r, c) ? r[c] : "")
               })
             })
         }

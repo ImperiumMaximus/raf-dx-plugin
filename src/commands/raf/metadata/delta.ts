@@ -83,7 +83,7 @@ export default class Migrate extends SfdxCommand {
 
   protected manifest;
   protected packageMapping;
-  protected multibar: any;
+  protected multibar: cliProgress.MultiBar;
   protected multibars: any = {};
 
   public async run(): Promise<AnyJson> {
@@ -112,12 +112,11 @@ export default class Migrate extends SfdxCommand {
     ])
 
     let files = []
-    let self = this
 
     const rows = (!fs.existsSync(this.flags.indeltacsv) && []) || fs
-    .readFileSync(this.flags.indeltacsv)
-    .toString('utf8')
-    .split('\n')
+      .readFileSync(this.flags.indeltacsv)
+      .toString('utf8')
+      .split('\n')
 
     if (this.multibar.terminal.isTTY()) {
       this.multibars.diffs = this.multibar.create(rows.length, 0, { name: messages.getMessage("metadata.delta.multibars.calculatingDiffs").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
@@ -126,28 +125,28 @@ export default class Migrate extends SfdxCommand {
     }
 
     files = _(rows)
-    .filter(x => x.startsWith(`${self.flags.rootdir}/`))
-    .map(x => x.replace(new RegExp(`^${self.flags.rootdir.replace('/', '\/')}\/`), ''))
-    //.map(x => x.replace(/-meta.xml$/, ''))
-    .filter(x => !ignoreDiffs.has(x))
-    .flatMap(x => {
-      if (self.multibar.terminal.isTTY()) {
-        self.multibars.diffs.update(null, { file: x })
-      }
-      const key = x.substring(0, x.indexOf('/'))
-      const res = []
-      if (self.packageMapping[key].metaFile === 'true') res.push(x + '-meta.xml')
-      const subx = x.replace(key + '/', '')
-      if (self.packageMapping[key].inFolder !== 'true' && subx.indexOf('/') !== -1) res.push(key + '/' + subx.substring(0, subx.indexOf('/')) + '/**')
-      res.push(x)
-      if (self.multibar.terminal.isTTY()) {
-        self.multibars.diffs.increment()
-        self.multibar.update()
-      }
-      return res
-    })
-    .uniq()
-    .value()
+      .filter(x => x.startsWith(`${this.flags.rootdir}/`))
+      .map(x => x.replace(new RegExp(`^${this.flags.rootdir.replace('/', '\\/')}/`), ''))
+      //.map(x => x.replace(/-meta.xml$/, ''))
+      .filter(x => !ignoreDiffs.has(x))
+      .flatMap(x => {
+        if (this.multibar.terminal.isTTY()) {
+          this.multibars.diffs.update(null, { file: x })
+        }
+        const key = x.substring(0, x.indexOf('/'))
+        const res = []
+        if (this.packageMapping[key].metaFile === 'true') res.push(x + '-meta.xml')
+        const subx = x.replace(key + '/', '')
+        if (this.packageMapping[key].inFolder !== 'true' && subx.indexOf('/') !== -1) res.push(key + '/' + subx.substring(0, subx.indexOf('/')) + '/**')
+        res.push(x)
+        if (this.multibar.terminal.isTTY()) {
+          this.multibars.diffs.increment()
+          this.multibar.update()
+        }
+        return res
+      })
+      .uniq()
+      .value()
 
     if (this.multibar.terminal.isTTY()) {
       this.multibars.total.increment()
@@ -182,13 +181,13 @@ export default class Migrate extends SfdxCommand {
     return ''
   }
 
-  public async readManifest() {
+  public async readManifest(): Promise<AnyJson> {
     return await this.parseXml(`${this.flags.inmanifestdir}/package.xml`)
   }
 
-  public async parseXml(xmlFile) {
+  public async parseXml(xmlFile: string): Promise<AnyJson> {
     return new Promise((resolve, reject) => {
-      var parser = new xml2js.Parser({ explicitArray: true });
+      const parser = new xml2js.Parser({ explicitArray: true });
       const data = fs.readFileSync(xmlFile)
       parser.parseString(data, (err, result) => {
         if (err) {
@@ -199,12 +198,11 @@ export default class Migrate extends SfdxCommand {
     })
   }
 
-  public async buildFilteredPackageXml(files) {
-    const self = this
+  public async buildFilteredPackageXml(files: string[]): Promise<void> {
     const metaMapGroup = _(files)
       .filter(x => !x.endsWith('/**'))
       //.filter(x => !x.endsWith('-meta.xml'))
-      .groupBy(f => self.packageMapping[f.substring(0, f.indexOf('/'))].xmlName)
+      .groupBy(f => this.packageMapping[f.substring(0, f.indexOf('/'))].xmlName)
 
     if (this.multibar.terminal.isTTY()) {
       this.multibars.filteredPackage = this.multibar.create(Object.keys(metaMapGroup.toJSON()).length, 0, { name: messages.getMessage("metadata.delta.multibars.buildingFiltMan").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
@@ -213,17 +211,18 @@ export default class Migrate extends SfdxCommand {
     }
 
     const metaMap = metaMapGroup.mapValues(x => {
-      if (self.multibar.terminal.isTTY()) {
-        self.multibars.filteredPackage.update(null, { file: x })
-        self.multibars.filteredPackage.increment()
-        self.multibar.update()
+      if (this.multibar.terminal.isTTY()) {
+        this.multibars.filteredPackage.update(null, { file: x })
+        this.multibars.filteredPackage.increment()
+        this.multibar.update()
       }
       return x.map(y => {
         const key = y.substring(0, y.indexOf('/'))
-        y = y.replace(key + '/', '').replace('-meta.xml', '').replace(self.packageMapping[key].suffix && '.' + self.packageMapping[key].suffix || '', '')
-        if (self.packageMapping[key].inFolder !== 'true' && y.indexOf('/') !== -1) y = y.substring(0, y.indexOf('/'))
+        y = y.replace(key + '/', '').replace('-meta.xml', '').replace(this.packageMapping[key].suffix && '.' + this.packageMapping[key].suffix || '', '')
+        if (this.packageMapping[key].inFolder !== 'true' && y.indexOf('/') !== -1) y = y.substring(0, y.indexOf('/'))
         return y
-      })})
+      })
+    })
       .value()
     this.manifest.Package.types = Object.entries(metaMap).map(x => ({
       members: [...new Set(x[1])],
@@ -231,34 +230,33 @@ export default class Migrate extends SfdxCommand {
     }))
   }
 
-  public async copyFilteredSource(files) {
+  public async copyFilteredSource(files: string[]): Promise<void> {
     if (this.multibar.terminal.isTTY()) {
       this.multibars.copyFilteredSourceBar = this.multibar.create(files.filter(x => !x.endsWith('/**')).length, 0, { name: messages.getMessage("metadata.delta.multibars.copyingToTarget").padEnd(30, ' '), file: messages.getMessage("metadata.delta.multibars.na") });
     } else {
       Raf.log(messages.getMessage("metadata.delta.infos.copyingToTarget", [files.filter(x => !x.endsWith('/**')).length]), LoggerLevel.INFO)
     }
-    let self = this
     await fsExtra.emptyDir(this.flags.outsourcedir)
-    await fsExtra.copy(this.flags.rootdir, this.flags.outsourcedir, { filter: filterFunc })
-
-    function filterFunc(path) {
-      if (fs.lstatSync(path).isDirectory()) {
-        return true
-      }
-      const basename = path.replace(`${self.flags.rootdir}/`, '')
-      const include = files.includes(basename)
-      if (include) {
-        if (self.multibar.terminal.isTTY()) {
-          self.multibars.copyFilteredSourceBar.update(null, { file: basename })
-          self.multibars.copyFilteredSourceBar.increment()
-          self.multibar.update()
+    await fsExtra.copy(this.flags.rootdir, this.flags.outsourcedir, {
+      filter: (path) => {
+        if (fs.lstatSync(path).isDirectory()) {
+          return true
         }
+        const basename = path.replace(`${this.flags.rootdir}/`, '')
+        const include = files.includes(basename)
+        if (include) {
+          if (this.multibar.terminal.isTTY()) {
+            this.multibars.copyFilteredSourceBar.update(null, { file: basename })
+            this.multibars.copyFilteredSourceBar.increment()
+            this.multibar.update()
+          }
+        }
+        return include
       }
-      return include
-    }
+    })
   }
 
-  public async writeManifest()  {
+  public async writeManifest(): Promise<void> {
     if (this.multibar.terminal.isTTY()) {
       this.multibars.writeManifestBar = this.multibar.create(1, 0, { name: messages.getMessage("metadata.delta.multibars.writingFiltMan").padEnd(30, ' '), file: `${this.flags.outmanifestdir}/package.xml` });
     } else {
@@ -274,8 +272,8 @@ export default class Migrate extends SfdxCommand {
     }
   }
 
-  public async writeXml(xmlFile, obj) {
-    var builder = new xml2js.Builder({
+  public async writeXml(xmlFile: string, obj: AnyJson): Promise<void> {
+    const builder = new xml2js.Builder({
       renderOpts: {
         'pretty': true,
         'indent': '    ',

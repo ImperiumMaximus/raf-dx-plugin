@@ -1,11 +1,13 @@
-import { Connection, Messages, SfdxError } from '@salesforce/core';
-
-var _ = require('lodash/core')
+import { Connection } from '@salesforce/core';
+import { Record, RecordResult, Callback } from 'jsforce';
+import { AnyJson } from '@salesforce/ts-types';
+import * as _ from 'lodash';
+//const _ = require('lodash/core')
 
 /*
  * Constant of maximum records num in DML operation (update/delete)
  */
-var MAX_DML_COUNT = 200;
+const MAX_DML_COUNT = 200;
 
 /**
 * Upsert records
@@ -20,15 +22,15 @@ var MAX_DML_COUNT = 200;
 * @returns {Promise.<RecordResult|Array.<RecordResult>>}
 */
 
-export function upsert(conn : Connection, type, records, extIdField, options?, callback?) {
-  if (!_.isString(type)) {
+export function upsert(conn : Connection, type: string, records: Record | Array<Record>, extIdField: string, options?: AnyJson, callback?: Callback<RecordResult | Array<RecordResult>>): Promise<RecordResult> {
+  /*if (!_.isString(type)) {
     // reverse order
     callback = options;
     options = extIdField;
     extIdField = records;
     records = type;
     type = null;
-  }
+  }*/
   if (typeof options === 'function') {
     callback = options;
     options = {};
@@ -53,7 +55,7 @@ function _supports(conn: Connection, feature) {
 }
 
 function _ensureVersion(conn: Connection, majorVersion) {
-  var versions = conn.version.split('.');
+  const versions = conn.version.split('.');
   return parseInt(versions[0], 10) >= majorVersion;
 }
 
@@ -62,9 +64,8 @@ function _upsertMany(conn: Connection, type, records, extIdField, options) {
     return Promise.resolve([]);
   }
   if (records.length > MAX_DML_COUNT && options.allowRecursive) {
-    var self = this;
-    return self._upsertMany(type, records.slice(0, MAX_DML_COUNT), options).then(function(rets1) {
-      return self._upsertMany(type, records.slice(MAX_DML_COUNT), options).then(function(rets2) {
+    return this._upsertMany(type, records.slice(0, MAX_DML_COUNT), options).then((rets1) => {
+      return this._upsertMany(type, records.slice(MAX_DML_COUNT), options).then((rets2) => {
         return rets1.concat(rets2);
       });
     });
@@ -79,7 +80,7 @@ function _upsertMany(conn: Connection, type, records, extIdField, options) {
     delete record.type;
     return record
   });
-  var url = [ conn._baseUrl(), "composite", "sobjects", sobjectType, extIdField ].join('/');
+  const url = [ conn._baseUrl(), "composite", "sobjects", sobjectType, extIdField ].join('/');
   return conn.request({
     method : 'PATCH',
     url : url,
@@ -94,14 +95,14 @@ function _upsertMany(conn: Connection, type, records, extIdField, options) {
 }
 
 function _upsertSingle(conn: Connection, type, record, extIdField, options) {
-  var sobjectType = type || (record.attributes && record.attributes.type) || record.type;
+  const sobjectType = type || (record.attributes && record.attributes.type) || record.type;
   if (!sobjectType) {
     return Promise.reject(new Error('No SObject Type defined in record'));
   }
-  var extId = record[extIdField];
+  const extId = record[extIdField];
   record = _.clone(record);
   delete record.type;
-  var url = [ conn._baseUrl(), "sobjects", sobjectType, extIdField, extId ].join('/');
+  const url = [ conn._baseUrl(), "sobjects", sobjectType, extIdField, extId ].join('/');
   return conn.request({
     method : 'PATCH',
     url : url,
@@ -134,13 +135,24 @@ function _upsertParallel(conn: Connection, type, records, extIdField, options) {
 
 
 function _toRecordResult(id, err) {
-  var error: any = {
+  interface Error {
+    statusCode: number,
+    message: string,
+    content?: string,
+    fields?: Array<string>
+  }
+  interface Result {
+    id?: string,
+    success: boolean,
+    errors: Array<Error>
+  }
+  const error: Error = {
     statusCode: err.errorCode,
     message: err.message
   };
   if (err.content) { error.content = err.content; } // preserve External id duplication message
   if (err.fields) { error.fields = err.fields; } // preserve DML exception occurred fields
-  var result: any = {
+  const result: Result = {
     success: false,
     errors: [error]
   };

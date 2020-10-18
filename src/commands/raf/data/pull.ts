@@ -1,5 +1,5 @@
 import { flags, SfdxCommand } from '@salesforce/command';
-import { Connection, Messages, SfdxError, Org } from '@salesforce/core';
+import { Connection, Messages, Org } from '@salesforce/core';
 import { AnyJson } from '@salesforce/ts-types';
 import { LoggerLevel, Raf } from "../../../raf";
 
@@ -17,7 +17,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
-export default class Pull extends SfdxCommand {
+export class Pull extends SfdxCommand {
 
   public static description = messages.getMessage("data.pull.description");
 
@@ -61,11 +61,7 @@ export default class Pull extends SfdxCommand {
     Raf.setLogLevel(this.flags.loglevel, this.flags.json)
 
     if (this.flags.targetusername) {
-      this.org =  await Org.create({ aliasOrUsername: this.flags.targetusername })
-    }
-
-    if (!this.org) {
-      throw new SfdxError(messages.getMessage("general.error.noOrgFound", [this.flags.targetusername]))
+      this.org = await Org.create({ aliasOrUsername: this.flags.targetusername })
     }
 
     if (this.flags.apiversion) {
@@ -76,7 +72,7 @@ export default class Pull extends SfdxCommand {
 
     if (!config.length) {
       Raf.log(messages.getMessage("data.pull.warns.datastoreEmpty"), LoggerLevel.WARN)
-      return ''
+      return messages.getMessage("data.pull.warns.datastoreEmpty")
     }
 
     const buildQuery = function (configItem) {
@@ -111,7 +107,7 @@ export default class Pull extends SfdxCommand {
       return conn
         .query(buildQuery(config[item]))
         .then(res => {
-          let opts: Options = {
+          const opts: Options = {
             delimiter: ',',
             quote: '"',
             quoted: true,
@@ -129,11 +125,11 @@ export default class Pull extends SfdxCommand {
         })
     }
 
-    processData(this.org.getConnection())
-    .then(() => Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO))
-    .catch(e => Raf.log(messages.getMessage("data.pull.errors.generalError", [e]), LoggerLevel.ERROR))
-
-    return ''
+    return new Promise(resolve => {
+      processData(this.org.getConnection())
+      .then(() => { Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO); resolve(); })
+      .catch(e => Raf.log(messages.getMessage("data.pull.errors.generalError", [e]), LoggerLevel.ERROR))
+    })
   }
 
 }

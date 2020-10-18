@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 describe('raf:boh:set', () => {
     it('runs raf:sharing:set ', async () => {
-      console.log(process.env.SCRATCH_ORG_NAME)
+      console.log(process.env.SCRATCH_ORG_USERNAME)
       expect.fail('aa')
       //expect(ctx.stdout).to.contain('Hello world! This is org: Super Awesome Org and I will be around until Tue Mar 20 2018!');
     });

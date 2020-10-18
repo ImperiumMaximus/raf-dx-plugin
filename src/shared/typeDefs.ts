@@ -55,11 +55,10 @@ interface Value {
 }
 
 interface ObjectConfig {
-    '@': {};
     deploymentStatus: string;
     label: string;
     pluralLabel: string;
-    indexes?: {};
+    indexes?: unknown;
     eventType?: string;
     description?: string;
     nameField?: {
@@ -79,7 +78,7 @@ interface ObjectConfig {
 }
 
 interface Record {
-    attributes: object;
+    attributes: unknown;
     Id: string;
 
     Name?: string;
@@ -177,7 +176,7 @@ interface CDCEvent extends PlatformEvent {
 
 interface PlatformEvent {
     schema: string;
-    payload: {};
+    payload: unknown;
     event: {
         replayId: number;
     };

@@ -114,19 +114,19 @@ export default class Patch extends SfdxCommand {
     return ''
   }
 
-  public async readProperties() {
+  public async readProperties(): Promise<void> {
     if (this.flags.propfile) {
       dotenv.config({ path: this.flags.propfile })
     }
   }
 
-  public async readManifest() {
+  public async readManifest(): Promise<AnyJson> {
     return await this.parseXml(`${this.flags.inmanifestdir}/package.xml`)
   }
 
-  public async parseXml(xmlFile) {
+  public async parseXml(xmlFile: string): Promise<AnyJson> {
     return new Promise((resolve, reject) => {
-      var parser = new xml2js.Parser({ explicitArray: true });
+      const parser = new xml2js.Parser({ explicitArray: true });
       const data = fs.readFileSync(xmlFile)
       parser.parseString(data, (err, result) => {
         if (err) {
@@ -137,7 +137,7 @@ export default class Patch extends SfdxCommand {
     })
   }
 
-  public async maybeCopySourceDir() {
+  public async maybeCopySourceDir(): Promise<string> {
     const outsourcedir = this.flags.outsourcedir
 
     if (outsourcedir) {
@@ -151,27 +151,27 @@ export default class Patch extends SfdxCommand {
       return this.flags.rootdir
     }
 
-    function filterFunc(src, dest) {
+    function filterFunc(src: string, dest: string) {
       return true
     }
   }
 
-  public async readFixesFile() {
-    var confs = JSON.parse(fs.readFileSync(this.flags.fixes).toString())
+  public async readFixesFile(): Promise<AnyJson> {
+    const confs = JSON.parse(fs.readFileSync(this.flags.fixes).toString())
     return Object.assign({}, confs['default'] || {}, confs[env] || {})
   }
 
-  public async delLwc() {
-    await del([this.baseDir + '/**/lwc/eslintrc.json', this.baseDir + '/**/lwc/jsconfig.json'])
+  public async delLwc(): Promise<string[]> {
+    return await del([this.baseDir + '/**/lwc/eslintrc.json', this.baseDir + '/**/lwc/jsconfig.json'])
   }
 
-  public async fixEmailUnfiledPublicFolder() {
-    var emailTemplate = _.find(this.manifest.Package.types, function (t) { return t.name[0] === 'EmailTemplate' })
+  public async fixEmailUnfiledPublicFolder(): Promise<void> {
+    const emailTemplate = _.find(this.manifest.Package.types, function (t) { return t.name[0] === 'EmailTemplate' })
     if (emailTemplate) emailTemplate.members = _.filter(emailTemplate.members, function (m) { return m !== 'unfiled$public' })
   }
 
-  public async preDeployFixes() {
-    let self = this
+  public async preDeployFixes(): Promise<void> {
+    const self = this
     _.each(_.keys(this.fixes), async function (path) {
       if (glob.hasMagic(path)) {
         glob(`${self.baseDir}/${path}`, function (err, files) {
@@ -184,8 +184,8 @@ export default class Patch extends SfdxCommand {
       }
 
       async function patchFile(f) {
-        let xml = await self.parseXml(f)
-        var confs = self.fixes[path]
+        const xml = await self.parseXml(f)
+        let confs = self.fixes[path]
         if (!_.isArray(confs)) confs = [confs]
         _.each(confs, function (conf) {
           self.processConf(xml, conf)
@@ -195,7 +195,7 @@ export default class Patch extends SfdxCommand {
     })
   }
 
-  public async writeManifest() {
+  public async writeManifest(): Promise<void> {
     let manifestDir;
     if (!this.flags.outmanifestdir) {
       manifestDir = this.flags.inmanifestdir
@@ -207,8 +207,8 @@ export default class Patch extends SfdxCommand {
     await this.writeXml(`${manifestDir}/package.xml`, this.manifest)
   }
 
-  public async writeXml(xmlFile, obj) {
-    var builder = new xml2js.Builder({
+  public async writeXml(xmlFile: string, obj: unknown): Promise<void> {
+    const builder = new xml2js.Builder({
       renderOpts: {
         'pretty': true,
         'indent': '    ',
@@ -221,8 +221,8 @@ export default class Patch extends SfdxCommand {
     fs.writeFileSync(xmlFile, builder.buildObject(obj))
   }
 
-  public async processConf(xml, conf) {
-    var token = xml
+  public async processConf(xml, conf): Promise<void> {
+    let token = xml
     if (conf.where) token = jsonQuery(conf.where, { data: xml })
 
     if (!token.value) return xml
@@ -232,9 +232,9 @@ export default class Patch extends SfdxCommand {
     if (conf.replace) {
       _.each(_.keys(conf.replace), function (t) {
         _.each(token, function (tk) {
-          var replaceValue = conf.replace[t]
-          var re = /\$\{(\w+)\}/gi
-          var matchArray
+          let replaceValue = conf.replace[t]
+          const re = /\$\{(\w+)\}/gi
+          let matchArray
           while ((matchArray = re.exec(replaceValue))) {
             replaceValue = replaceValue.replace(matchArray[0], process.env[matchArray[1]])
           }
@@ -257,8 +257,8 @@ export default class Patch extends SfdxCommand {
 
     if (conf.deletePermissionBlocks) {
       _.each(conf.deletePermissionBlocks, function (perm) {
-        if (_.findIndex(token[0].userPermissions, (p:any) => p.name[0] === perm) !== -1) {
-          _.remove(token[0].userPermissions, (p:any) => {
+        if (_.findIndex(token[0].userPermissions, (p: GenericEntity) => p.name[0] === perm) !== -1) {
+          _.remove(token[0].userPermissions, (p: GenericEntity) => {
             return p.name[0] === perm
           })
         }
@@ -267,7 +267,7 @@ export default class Patch extends SfdxCommand {
 
     if (conf.disablePermissions && token[0].userPermissions) {
       _.each(conf.disablePermissions, function (perm) {
-        if (_.findIndex(token[0].userPermissions, (p:any) => p.name[0] === perm) === -1) {
+        if (_.findIndex(token[0].userPermissions, (p: GenericEntity) => p.name[0] === perm) === -1) {
           token[0].userPermissions.push({
             enabled: false,
             name: perm
@@ -278,8 +278,8 @@ export default class Patch extends SfdxCommand {
 
     if (conf.deleteListView) {
       _.each(conf.deleteListView, function (perm) {
-        if (_.findIndex(token[0].listViews, (p:any) => p.fullName[0] === perm) !== -1) {
-          _.remove(token[0].listViews, (p:any) => {
+        if (_.findIndex(token[0].listViews, (p: GenericEntity) => p.fullName[0] === perm) !== -1) {
+          _.remove(token[0].listViews, (p: GenericEntity) => {
             return p.fullName[0] === perm
           })
         }
@@ -288,8 +288,8 @@ export default class Patch extends SfdxCommand {
 
     if (conf.deleteFieldPermissions && token[0].fieldPermissions) {
       _.each(conf.deleteFieldPermissions, function(perm) {
-        if (_.findIndex(token[0].fieldPermissions, (p:any) => p.field[0] === perm) !== -1) {
-          _.remove(token[0].fieldPermissions, (p:any) => {
+        if (_.findIndex(token[0].fieldPermissions, (p: CustomField) => p.field[0] === perm) !== -1) {
+          _.remove(token[0].fieldPermissions, (p: CustomField) => {
             return p.field[0] === perm
           })
         }
@@ -298,7 +298,7 @@ export default class Patch extends SfdxCommand {
 
     if (conf.disableTabs) {
       _.each(conf.disableTabs, function (perm) {
-        if (_.findIndex(token[0].tabVisibilities, (t:any) => t.tab[0] === perm) === -1) {
+        if (_.findIndex(token[0].tabVisibilities, (t: CustomTab) => t.tab[0] === perm) === -1) {
           token[0].tabVisibilities.push({
             tab: perm,
             visibility: 'Hidden'
@@ -309,7 +309,7 @@ export default class Patch extends SfdxCommand {
 
     if (conf.disableApplications) {
       _.each(conf.disableApplications, function (app) {
-        if (_.findIndex(token[0].applicationVisibilities, (t:any) => t.application[0] === app) === -1) {
+        if (_.findIndex(token[0].applicationVisibilities, (t: CustomApplication) => t.application[0] === app) === -1) {
           token[0].applicationVisibilities.push({
             application: app,
             'default': 'false',
@@ -321,7 +321,7 @@ export default class Patch extends SfdxCommand {
 
     if (conf.enableTabs) {
       _.each(conf.enableTabs, function (perm) {
-        if (_.findIndex(token[0].tabVisibilities, (t:any) => t.tab[0] === perm) === -1) {
+        if (_.findIndex(token[0].tabVisibilities, (t: CustomTab) => t.tab[0] === perm) === -1) {
           token[0].tabVisibilities.push({
             tab: perm,
             visibility: 'DefaultOn'
@@ -332,7 +332,7 @@ export default class Patch extends SfdxCommand {
 
     if (conf.disableObjects) {
       _.each(conf.disableObjects, function (obj) {
-        if (_.findIndex(token[0].objectPermissions, (o:any) => o.object[0] === obj) === -1) {
+        if (_.findIndex(token[0].objectPermissions, (o: ObjectPermission) => o.object[0] === obj) === -1) {
           token[0].objectPermissions.push({
             'allowCreate': false,
             'allowDelete': false,
@@ -348,3 +348,24 @@ export default class Patch extends SfdxCommand {
   }
 }
 
+interface ObjectPermission {
+  object: Array<string>
+}
+
+
+interface CustomTab {
+  tab: Array<string>
+}
+
+interface CustomApplication {
+  application: Array<string>
+}
+
+interface CustomField {
+  field: Array<string>
+}
+
+interface GenericEntity {
+  name?: Array<string>
+  fullName?: Array<string>
+}

@@ -18,7 +18,7 @@ Messages.importMessagesDirectory(__dirname);
 // or any library that is using the messages framework can also be loaded this way.
 const messages = Messages.loadMessages('raf-dx-plugin', 'raf');
 
-export default class Push extends SfdxCommand {
+export class Push extends SfdxCommand {
 
   public static description = messages.getMessage("data.push.description");
 
@@ -62,7 +62,7 @@ export default class Push extends SfdxCommand {
     Raf.setLogLevel(this.flags.loglevel, this.flags.json)
 
     if (this.flags.targetusername) {
-      this.org =  await Org.create({ aliasOrUsername: this.flags.targetusername })
+      this.org = await Org.create({ aliasOrUsername: this.flags.targetusername })
     }
 
     if (!this.org) {
@@ -104,7 +104,7 @@ export default class Push extends SfdxCommand {
         else {
           (this.cfg.operation === 'delete' ? this.conn.sobject(this.cfg.object).delete(attrs.id) : upsert(this.conn, this.cfg.object, attrs.sObjects, attrs.externalIdFieldName))
             .then(res => {
-              var resArray = Array.isArray(res) ? res : [res]
+              const resArray = Array.isArray(res) ? res : [res]
               Raf.log(messages.getMessage("data.push.infos.processedRecords", [this.cfg.operation === 'delete' ? 'deleted' : 'upserted', resArray.length]), LoggerLevel.INFO)
               let hasErrors = false
               resArray.forEach((r, index) => {
@@ -186,12 +186,14 @@ export default class Push extends SfdxCommand {
       })
     }
 
-    processData(this.org.getConnection())
-    .then(() => Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO))
-    .catch(e => Raf.log(messages.getMessage("data.push.errors.generalError", [e]), LoggerLevel.ERROR))
+    return new Promise(resolve => {
+      processData(this.org.getConnection())
+      .then(() => { Raf.log(messages.getMessage("general.infos.done"), LoggerLevel.INFO); resolve() })
+      .catch(e => Raf.log(messages.getMessage("data.push.errors.generalError", [e]), LoggerLevel.ERROR))
+    })
 
 
-    return ''
+    //return ''
   }
 
 }

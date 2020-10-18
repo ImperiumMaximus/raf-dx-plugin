@@ -240,7 +240,7 @@ export default class Migrate extends SfdxCommand {
     return metadata_deploy_result.success;
   }
 
-  public async zipDirectory(source, out) {
+  public async zipDirectory(source: string, out: string): Promise<void> {
     const archive = archiver("zip", { zlib: { level: 9 } });
     const stream = fs.createWriteStream(out);
 
@@ -259,13 +259,12 @@ export default class Migrate extends SfdxCommand {
     conn: Connection,
     retrievedId: string
   ): Promise<DeployResult> {
-    let metadata_result;
-    const self = this
-    while (true) {
-      await conn.metadata.checkDeployStatus(retrievedId, true, function (
+    let metadata_result: DeployResult;
+    while (!metadata_result.done) {
+      await conn.metadata.checkDeployStatus(retrievedId, true, (
         error,
         result
-      ) {
+      ) => {
         if (error) {
           throw new SfdxError(error.message);
         }
@@ -274,15 +273,13 @@ export default class Migrate extends SfdxCommand {
 
       if (!metadata_result.done) {
         Raf.log(messages.getMessage("sharing.set.infos.pollingDeploymentStatus"), LoggerLevel.INFO);
-        await self.delay(5000);
-      } else {
-        break;
+        await this.delay(5000);
       }
     }
     return metadata_result;
   }
 
-  public async delay(ms: number) {
+  public async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
