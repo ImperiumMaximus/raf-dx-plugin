@@ -35,3 +35,4 @@ ehthumbs.db
 $RECYCLE.BIN/
 force-app-delta/
 manifest-delta/
+force-app-[0-9]*/
